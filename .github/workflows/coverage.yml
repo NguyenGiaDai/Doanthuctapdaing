@@ -1,0 +1,59 @@
+name: Progress Tracking
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Restore dependencies
+        run: dotnet restore
+
+      # - name: Check Code Format
+      #   run: dotnet format --verify-no-changes --verbosity diagnostic
+
+      - name: Run Tests with Coverage
+        run: dotnet test --configuration Release --collect:"XPlat Code Coverage" --results-directory ./coverage
+
+      - name: ReportGenerator
+        uses: danielpalme/ReportGenerator-GitHub-Action@5.2.4
+        with:
+          reports: "coverage/**/coverage.cobertura.xml"
+          targetdir: "coveragereport"
+          reporttypes: "MarkdownSummary;Badges" # Tạo file tóm tắt và ảnh Badge
+
+      - name: Update README with Coverage
+        run: |
+          REPORT_PATH="coveragereport/Summary.md"
+
+          if [ -f "$REPORT_PATH" ]; then
+            COVERAGE=$(grep -oP 'Line coverage: \K[0-9.]+' "$REPORT_PATH" | head -1)
+            echo "Current coverage is $COVERAGE%"
+            
+            if [ -z "$COVERAGE" ]; then COVERAGE="0"; fi
+
+            sed -i "s|!\[Coverage\].*|![Coverage](https://img.shields.io/badge/Progress-${COVERAGE}%25-brightgreen)|g" README.md
+          else
+            echo "Error: Report file not found at $REPORT_PATH"
+            exit 1
+          fi
+
+      - name: Commit & Push changes
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add README.md
+          git commit -m "chore: update progress badge to $COVERAGE%" || echo "No changes to commit"
+          git push
