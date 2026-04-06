@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Clean Architecture Training Documentation
 
 # Project Thực Tập - .NET 8 Clean Architecture
@@ -293,3 +294,6 @@ Dự án này được license under MIT License. Xem file [LICENSE](LICENSE) đ
 **Chúc mừng! Bạn đã sẵn sàng để bắt đầu hành trình Clean Architecture! 🚀**
 
 Hãy bắt đầu với [Setup Guide](./docs/SETUP_GUIDE.md) để cài đặt và chạy dự án, sau đó theo [Training Curriculum](./docs/TRAINING_CURRICULUM.md) để học từng bước một cách có hệ thống.
+=======
+# Doanthuctapdaing
+>>>>>>> 576d213cd7272ddee8f5cad7aaa81c056d44d516
