@@ -11,6 +11,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             IdentityRoleClaim<Guid>, IdentityUserToken<Guid>>(options)
 {
     public DbSet<Book> Books { get; set; }
+    public DbSet<Container> Containers { get; set; }
     public DbSet<User> Users { get; set; }
     public DbSet<ApplicationUser> ApplicationUsers { get; set; }
     public DbSet<RefreshToken> RefreshTokens { get; set; }

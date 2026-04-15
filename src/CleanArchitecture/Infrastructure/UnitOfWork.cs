@@ -12,6 +12,7 @@ public class UnitOfWork : IUnitOfWork
 
     public IUserRepository UserRepository { get; }
     public IBookRepository BookRepository { get; }
+    public IContainerRepository ContainerRepository { get; }
     public IRefreshTokenRepository RefreshTokenRepository { get; }
     public IMediaRepository MediaRepository { get; }
     public IForgotPasswordRepository ForgotPasswordRepository { get; }
@@ -21,6 +22,7 @@ public class UnitOfWork : IUnitOfWork
         _context = dbContext;
         UserRepository = new UserRepository(_context);
         BookRepository = new BookRepository(_context);
+        ContainerRepository = new ContainerRepository(_context);
         RefreshTokenRepository = new RefreshTokenRepository(_context);
         MediaRepository = new MediaRepository(_context);
         ForgotPasswordRepository = new ForgotPasswordRepository(_context);

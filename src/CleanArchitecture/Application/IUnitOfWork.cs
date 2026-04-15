@@ -6,6 +6,7 @@ public interface IUnitOfWork
 {
     IUserRepository UserRepository { get; }
     IBookRepository BookRepository { get; }
+    IContainerRepository ContainerRepository { get; }
     IRefreshTokenRepository RefreshTokenRepository { get; }
     IMediaRepository MediaRepository { get; }
     IForgotPasswordRepository ForgotPasswordRepository { get; }
