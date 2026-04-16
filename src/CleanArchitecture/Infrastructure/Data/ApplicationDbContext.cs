@@ -2,7 +2,9 @@ using System.Reflection;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
-
+using System;
+using System.Threading;
+using System.Threading.Tasks;
 namespace CleanArchitecture.Infrastructure.Data;
 
 public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) :
@@ -10,7 +12,6 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             IdentityUserClaim<Guid>, UserRoles, IdentityUserLogin<Guid>,
             IdentityRoleClaim<Guid>, IdentityUserToken<Guid>>(options)
 {
-    public DbSet<Book> Books { get; set; }
     public DbSet<Container> Containers { get; set; }
     public DbSet<User> Users { get; set; }
     public DbSet<ApplicationUser> ApplicationUsers { get; set; }

@@ -3,7 +3,9 @@ using CleanArchitecture.Application.Common.Interfaces;
 using CleanArchitecture.Application.Common.Utilities;
 using CleanArchitecture.Application.Services;
 using CleanArchitecture.Web.Services;
-
+using System;
+using System.Threading;
+using System.Threading.Tasks;
 namespace CleanArchitecture.Application;
 
 public static class ConfigureServices
@@ -11,7 +13,6 @@ public static class ConfigureServices
     public static IServiceCollection AddApplicationService(this IServiceCollection services, AppSettings appsettings)
     {
         services.AddTransient<IAuthService, AuthService>();
-        services.AddTransient<IBookService, BookService>();
         services.AddTransient<IContainerService, ContainerService>();
         services.AddTransient<IMailService, MailService>();
         services.AddTransient<IMediaService, MediaService>();
@@ -26,7 +27,6 @@ public static class ConfigureServices
         {
             services.AddSingleton<IFileService, CloudinaryStorageService>();
         }
-
 
         services.AddTransient<IUserService, UserService>();
 
