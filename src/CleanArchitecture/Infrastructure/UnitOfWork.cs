@@ -16,8 +16,6 @@ public class UnitOfWork : IUnitOfWork
     public IContainerRepository ContainerRepository { get; }
     public IRefreshTokenRepository RefreshTokenRepository { get; }
     public IMediaRepository MediaRepository { get; }
-    public IForgotPasswordRepository ForgotPasswordRepository { get; }
-
     public UnitOfWork(ApplicationDbContext dbContext)
     {
         _context = dbContext;
@@ -25,7 +23,6 @@ public class UnitOfWork : IUnitOfWork
         ContainerRepository = new ContainerRepository(_context);
         RefreshTokenRepository = new RefreshTokenRepository(_context);
         MediaRepository = new MediaRepository(_context);
-        ForgotPasswordRepository = new ForgotPasswordRepository(_context);
     }
 
     public async Task SaveChangesAsync(CancellationToken token)

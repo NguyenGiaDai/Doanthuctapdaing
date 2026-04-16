@@ -14,7 +14,6 @@ public static class ConfigureServices
     {
         services.AddTransient<IAuthService, AuthService>();
         services.AddTransient<IContainerService, ContainerService>();
-        services.AddTransient<IMailService, MailService>();
         services.AddTransient<IMediaService, MediaService>();
         services.AddTransient<IRoleService, RoleService>();
         services.AddTransient<IAuthIdentityService, AuthIdentityService>();

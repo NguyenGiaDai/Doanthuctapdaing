@@ -5,9 +5,7 @@ using CleanArchitecture.Infrastructure.Data;
 using CleanArchitecture.Infrastructure.Interface;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Threading;
-using System.Threading.Tasks;
+
 namespace CleanArchitecture.Infrastructure;
 
 public static class ConfigureServices
@@ -34,7 +32,6 @@ public static class ConfigureServices
         services.AddScoped<IContainerRepository, ContainerRepository>();
         services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
         services.AddScoped<IMediaRepository, MediaRepository>();
-        services.AddScoped<IForgotPasswordRepository, ForgotPasswordRepository>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddTransient<ApplicationDbContextInitializer>();
 
