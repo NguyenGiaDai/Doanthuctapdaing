@@ -3,9 +3,6 @@ using CleanArchitecture.Application.Common.Interfaces;
 using CleanArchitecture.Application.Common.Utilities;
 using CleanArchitecture.Application.Services;
 using CleanArchitecture.Web.Services;
-using System;
-using System.Threading;
-using System.Threading.Tasks;
 namespace CleanArchitecture.Application;
 
 public static class ConfigureServices
@@ -14,6 +11,10 @@ public static class ConfigureServices
     {
         services.AddTransient<IAuthService, AuthService>();
         services.AddTransient<IContainerService, ContainerService>();
+        services.AddTransient<IDepotService, DepotService>();
+        services.AddTransient<IBlockService, BlockService>();
+        services.AddTransient<IContainerPositionService, ContainerPositionService>();
+        services.AddTransient<IContainerTransactionService, ContainerTransactionService>();
         services.AddTransient<IMediaService, MediaService>();
         services.AddTransient<IRoleService, RoleService>();
         services.AddTransient<IAuthIdentityService, AuthIdentityService>();

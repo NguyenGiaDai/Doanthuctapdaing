@@ -3,9 +3,8 @@ using CleanArchitecture.Application.Common.Exceptions;
 using CleanArchitecture.Application.Repositories;
 using CleanArchitecture.Infrastructure.Data;
 using CleanArchitecture.Infrastructure.Interface;
-using System;
-using System.Threading;
-using System.Threading.Tasks;
+
+
 namespace CleanArchitecture.Infrastructure;
 
 public class UnitOfWork : IUnitOfWork
@@ -14,13 +13,22 @@ public class UnitOfWork : IUnitOfWork
 
     public IUserRepository UserRepository { get; }
     public IContainerRepository ContainerRepository { get; }
+    public IDepotRepository DepotRepository { get; }
+    public IBlockRepository BlockRepository { get; }
+    public IContainerPositionRepository ContainerPositionRepository { get; }
+    public IContainerTransactionRepository ContainerTransactionRepository { get; }
     public IRefreshTokenRepository RefreshTokenRepository { get; }
     public IMediaRepository MediaRepository { get; }
+
     public UnitOfWork(ApplicationDbContext dbContext)
     {
         _context = dbContext;
         UserRepository = new UserRepository(_context);
         ContainerRepository = new ContainerRepository(_context);
+        DepotRepository = new DepotRepository(_context);
+        BlockRepository = new BlockRepository(_context);
+        ContainerPositionRepository = new ContainerPositionRepository(_context);
+        ContainerTransactionRepository = new ContainerTransactionRepository(_context);
         RefreshTokenRepository = new RefreshTokenRepository(_context);
         MediaRepository = new MediaRepository(_context);
     }

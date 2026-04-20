@@ -1,13 +1,14 @@
 using CleanArchitecture.Infrastructure.Interface;
-using System;
-using System.Threading;
-using System.Threading.Tasks;
 namespace CleanArchitecture.Application;
 
 public interface IUnitOfWork
 {
     IUserRepository UserRepository { get; }
     IContainerRepository ContainerRepository { get; }
+    IBlockRepository BlockRepository { get; }
+    IDepotRepository DepotRepository { get; }
+    IContainerPositionRepository ContainerPositionRepository { get; }
+    IContainerTransactionRepository ContainerTransactionRepository { get; }
     IRefreshTokenRepository RefreshTokenRepository { get; }
     IMediaRepository MediaRepository { get; }
     Task SaveChangesAsync(CancellationToken token);

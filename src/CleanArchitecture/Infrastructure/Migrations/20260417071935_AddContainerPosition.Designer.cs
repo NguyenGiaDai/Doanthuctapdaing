@@ -4,6 +4,7 @@ using CleanArchitecture.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace CleanArchitecture.Infrastructure.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260417071935_AddContainerPosition")]
+    partial class AddContainerPosition
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -108,14 +111,14 @@ namespace CleanArchitecture.Infrastructure.Migrations
                         {
                             Id = new Guid("69db714f-9576-45ba-b5b7-f00649be01de"),
                             AccessFailedCount = 0,
-                            ConcurrencyStamp = "d271481b-7891-4367-bf0d-a9740c189624",
+                            ConcurrencyStamp = "7fbcfe4d-4993-4de0-9300-35aa2187a18f",
                             Email = "admin@gmail.com",
                             EmailConfirmed = true,
                             LockoutEnabled = false,
                             Name = "Admin 1",
                             NormalizedEmail = "ADMIN@GMAIL.COM",
                             NormalizedUserName = "admin",
-                            PasswordHash = "AQAAAAIAAYagAAAAEBv+7OPcpValWBHVfKMRy7bfWVB3hDdcDecsJx7wR2F7aBd83w+4Zubu3nOFs3Bc9A==",
+                            PasswordHash = "AQAAAAIAAYagAAAAEBjAT8Fr/po7UAbSlD+5K0xh/tn4C/7SM5VpToDsX57ckkVHjwF4/IrRJ3ecyja6kg==",
                             PhoneNumberConfirmed = false,
                             SecurityStamp = "",
                             Status = 0,
@@ -242,68 +245,6 @@ namespace CleanArchitecture.Infrastructure.Migrations
                     b.HasIndex("ContainerId");
 
                     b.ToTable("ContainerPositions");
-                });
-
-            modelBuilder.Entity("CleanArchitecture.Domain.Entities.ContainerTransaction", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<int>("ContainerId")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("FromBay")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("FromBlockId")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("FromRow")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("FromTier")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Note")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
-
-                    b.Property<int?>("ToBay")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("ToBlockId")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("ToRow")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("ToTier")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime>("TransactionTime")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("TransactionType")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)");
-
-                    b.Property<string>("VehicleNumber")
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ContainerId");
-
-                    b.HasIndex("FromBlockId");
-
-                    b.HasIndex("ToBlockId");
-
-                    b.ToTable("ContainerTransactions");
                 });
 
             modelBuilder.Entity("CleanArchitecture.Domain.Entities.Depot", b =>
@@ -613,31 +554,6 @@ namespace CleanArchitecture.Infrastructure.Migrations
                     b.Navigation("Container");
                 });
 
-            modelBuilder.Entity("CleanArchitecture.Domain.Entities.ContainerTransaction", b =>
-                {
-                    b.HasOne("CleanArchitecture.Domain.Entities.Container", "Container")
-                        .WithMany("ContainerTransactions")
-                        .HasForeignKey("ContainerId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("CleanArchitecture.Domain.Entities.Block", "FromBlock")
-                        .WithMany("FromContainerTransactions")
-                        .HasForeignKey("FromBlockId")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.HasOne("CleanArchitecture.Domain.Entities.Block", "ToBlock")
-                        .WithMany("ToContainerTransactions")
-                        .HasForeignKey("ToBlockId")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.Navigation("Container");
-
-                    b.Navigation("FromBlock");
-
-                    b.Navigation("ToBlock");
-                });
-
             modelBuilder.Entity("CleanArchitecture.Domain.Entities.RefreshToken", b =>
                 {
                     b.HasOne("CleanArchitecture.Domain.Entities.ApplicationUser", "User")
@@ -714,17 +630,11 @@ namespace CleanArchitecture.Infrastructure.Migrations
             modelBuilder.Entity("CleanArchitecture.Domain.Entities.Block", b =>
                 {
                     b.Navigation("ContainerPositions");
-
-                    b.Navigation("FromContainerTransactions");
-
-                    b.Navigation("ToContainerTransactions");
                 });
 
             modelBuilder.Entity("CleanArchitecture.Domain.Entities.Container", b =>
                 {
                     b.Navigation("ContainerPositions");
-
-                    b.Navigation("ContainerTransactions");
                 });
 
             modelBuilder.Entity("CleanArchitecture.Domain.Entities.Depot", b =>

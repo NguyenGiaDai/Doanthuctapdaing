@@ -2,9 +2,6 @@ using System.Reflection;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Threading;
-using System.Threading.Tasks;
 namespace CleanArchitecture.Infrastructure.Data;
 
 public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) :
@@ -12,7 +9,11 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             IdentityUserClaim<Guid>, UserRoles, IdentityUserLogin<Guid>,
             IdentityRoleClaim<Guid>, IdentityUserToken<Guid>>(options)
 {
+    public DbSet<Depot> Depots { get; set; }
     public DbSet<Container> Containers { get; set; }
+    public DbSet<Block> Blocks { get; set; }
+    public DbSet<ContainerPosition> ContainerPositions { get; set; }
+    public DbSet<ContainerTransaction> ContainerTransactions { get; set; }
     public DbSet<User> Users { get; set; }
     public DbSet<ApplicationUser> ApplicationUsers { get; set; }
     public DbSet<RefreshToken> RefreshTokens { get; set; }
@@ -22,6 +23,35 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     {
         base.OnModelCreating(builder);
         builder.ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly());
+        builder.Entity<ContainerTransaction>(entity =>
+        {
+            entity.HasKey(x => x.Id);
+
+            entity.Property(x => x.TransactionType)
+                .IsRequired()
+                .HasMaxLength(20);
+
+            entity.Property(x => x.VehicleNumber)
+                .HasMaxLength(50);
+
+            entity.Property(x => x.Note)
+                .HasMaxLength(500);
+
+            entity.HasOne(x => x.Container)
+                .WithMany(x => x.ContainerTransactions)
+                .HasForeignKey(x => x.ContainerId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(x => x.FromBlock)
+                .WithMany(x => x.FromContainerTransactions)
+                .HasForeignKey(x => x.FromBlockId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(x => x.ToBlock)
+                .WithMany(x => x.ToContainerTransactions)
+                .HasForeignKey(x => x.ToBlockId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
         builder.Entity<IdentityUserClaim<Guid>>().ToTable("UserClaims");
         builder.Entity<IdentityUserLogin<Guid>>().ToTable("UserLogin").HasKey(l => new
         {

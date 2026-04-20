@@ -1,6 +1,5 @@
 using AutoMapper;
 using CleanArchitecture.Application.Common.Interfaces;
-using CleanArchitecture.Domain.Entities;
 using CleanArchitecture.Shared.Models;
 using CleanArchitecture.Shared.Models.Container;
 
