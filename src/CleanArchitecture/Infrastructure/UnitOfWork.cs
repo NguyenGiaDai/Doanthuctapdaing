@@ -17,6 +17,10 @@ public class UnitOfWork : IUnitOfWork
     public IBlockRepository BlockRepository { get; }
     public IContainerPositionRepository ContainerPositionRepository { get; }
     public IContainerTransactionRepository ContainerTransactionRepository { get; }
+    public ICustomerRepository CustomerRepository { get; }
+    public ILineOperatorRepository LineOperatorRepository { get; }
+    public IContainerTypeRepository ContainerTypeRepository { get; }
+    public IDeliveryOrderRepository DeliveryOrderRepository { get; }
     public IRefreshTokenRepository RefreshTokenRepository { get; }
     public IMediaRepository MediaRepository { get; }
 
@@ -29,6 +33,10 @@ public class UnitOfWork : IUnitOfWork
         BlockRepository = new BlockRepository(_context);
         ContainerPositionRepository = new ContainerPositionRepository(_context);
         ContainerTransactionRepository = new ContainerTransactionRepository(_context);
+        CustomerRepository = new CustomerRepository(_context);
+        LineOperatorRepository = new LineOperatorRepository(_context);
+        ContainerTypeRepository = new ContainerTypeRepository(_context);
+        DeliveryOrderRepository = new DeliveryOrderRepository(_context);
         RefreshTokenRepository = new RefreshTokenRepository(_context);
         MediaRepository = new MediaRepository(_context);
     }

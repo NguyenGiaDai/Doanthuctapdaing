@@ -4,6 +4,7 @@ using CleanArchitecture.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace CleanArchitecture.Infrastructure.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260421065224_AddCustomer")]
+    partial class AddCustomer
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -108,14 +111,14 @@ namespace CleanArchitecture.Infrastructure.Migrations
                         {
                             Id = new Guid("69db714f-9576-45ba-b5b7-f00649be01de"),
                             AccessFailedCount = 0,
-                            ConcurrencyStamp = "44ec42d4-28f7-4042-9c49-a56242dbdb94",
+                            ConcurrencyStamp = "84553559-01ae-425e-8a24-365e2337a92a",
                             Email = "admin@gmail.com",
                             EmailConfirmed = true,
                             LockoutEnabled = false,
                             Name = "Admin 1",
                             NormalizedEmail = "ADMIN@GMAIL.COM",
                             NormalizedUserName = "admin",
-                            PasswordHash = "AQAAAAIAAYagAAAAEDREj1YFjhHUeOfsCwNgZML95Ck20McvpcNnG7RzhxK1BZgFcRYEncHWsu+hyU+WmA==",
+                            PasswordHash = "AQAAAAIAAYagAAAAEMbu3zKS71iDOiQy+DQmbCl1ZxMK5m8VUdHj59SQ8xaknndWUWE5YF/Dhcc/PmPA8A==",
                             PhoneNumberConfirmed = false,
                             SecurityStamp = "",
                             Status = 0,
@@ -171,43 +174,40 @@ namespace CleanArchitecture.Infrastructure.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<string>("ContainerClassification")
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
                     b.Property<string>("ContainerCondition")
                         .IsRequired()
-                        .HasMaxLength(255)
-                        .HasColumnType("nvarchar(255)");
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("ContainerNumber")
                         .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("ContainerOwner")
                         .IsRequired()
-                        .HasMaxLength(255)
-                        .HasColumnType("nvarchar(255)");
+                        .HasColumnType("nvarchar(max)");
 
-                    b.Property<int>("ContainerTypeId")
-                        .HasColumnType("int");
+                    b.Property<string>("ContainerSize")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("CurrentStatus")
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
+                    b.Property<string>("ContainerType")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime?>("DateOfManufacture")
                         .HasColumnType("datetime2");
 
-                    b.Property<int>("LineOperatorId")
-                        .HasColumnType("int");
+                    b.Property<string>("IsoCode")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<decimal?>("MaximumWeight")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal?>("TareWeight")
+                        .HasColumnType("decimal(18,2)");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("ContainerTypeId");
-
-                    b.HasIndex("LineOperatorId");
 
                     b.ToTable("Containers");
                 });
@@ -309,43 +309,6 @@ namespace CleanArchitecture.Infrastructure.Migrations
                     b.ToTable("ContainerTransactions");
                 });
 
-            modelBuilder.Entity("CleanArchitecture.Domain.Entities.ContainerType", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<int>("ContainerSize")
-                        .HasColumnType("int");
-
-                    b.Property<string>("ContainerTypeCode")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<string>("ContainerTypeName")
-                        .IsRequired()
-                        .HasMaxLength(255)
-                        .HasColumnType("nvarchar(255)");
-
-                    b.Property<string>("ISOCode")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<decimal?>("MaximumWeight")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<decimal?>("TareWeight")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("ContainerTypes");
-                });
-
             modelBuilder.Entity("CleanArchitecture.Domain.Entities.Customer", b =>
                 {
                     b.Property<int>("Id")
@@ -377,56 +340,6 @@ namespace CleanArchitecture.Infrastructure.Migrations
                     b.ToTable("Customers");
                 });
 
-            modelBuilder.Entity("CleanArchitecture.Domain.Entities.DeliveryOrder", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<int>("ContainerTypeId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("CustomerId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("DONumber")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<DateTime>("ExpiryDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("LineOperatorId")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime?>("OrderDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("OrderStatus")
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<int>("Quantity")
-                        .HasColumnType("int");
-
-                    b.Property<string>("VesselVoyage")
-                        .HasMaxLength(255)
-                        .HasColumnType("nvarchar(255)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ContainerTypeId");
-
-                    b.HasIndex("CustomerId");
-
-                    b.HasIndex("LineOperatorId");
-
-                    b.ToTable("DeliveryOrders");
-                });
-
             modelBuilder.Entity("CleanArchitecture.Domain.Entities.Depot", b =>
                 {
                     b.Property<int>("Id")
@@ -449,29 +362,6 @@ namespace CleanArchitecture.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Depots");
-                });
-
-            modelBuilder.Entity("CleanArchitecture.Domain.Entities.LineOperator", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("LineOperatorCode")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<string>("LineOperatorName")
-                        .IsRequired()
-                        .HasMaxLength(255)
-                        .HasColumnType("nvarchar(255)");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("LineOperators");
                 });
 
             modelBuilder.Entity("CleanArchitecture.Domain.Entities.Media", b =>
@@ -738,25 +628,6 @@ namespace CleanArchitecture.Infrastructure.Migrations
                     b.Navigation("Depot");
                 });
 
-            modelBuilder.Entity("CleanArchitecture.Domain.Entities.Container", b =>
-                {
-                    b.HasOne("CleanArchitecture.Domain.Entities.ContainerType", "ContainerTypeNavigation")
-                        .WithMany("Containers")
-                        .HasForeignKey("ContainerTypeId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("CleanArchitecture.Domain.Entities.LineOperator", "LineOperator")
-                        .WithMany("Containers")
-                        .HasForeignKey("LineOperatorId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("ContainerTypeNavigation");
-
-                    b.Navigation("LineOperator");
-                });
-
             modelBuilder.Entity("CleanArchitecture.Domain.Entities.ContainerPosition", b =>
                 {
                     b.HasOne("CleanArchitecture.Domain.Entities.Block", "Block")
@@ -799,33 +670,6 @@ namespace CleanArchitecture.Infrastructure.Migrations
                     b.Navigation("FromBlock");
 
                     b.Navigation("ToBlock");
-                });
-
-            modelBuilder.Entity("CleanArchitecture.Domain.Entities.DeliveryOrder", b =>
-                {
-                    b.HasOne("CleanArchitecture.Domain.Entities.ContainerType", "ContainerType")
-                        .WithMany("DeliveryOrders")
-                        .HasForeignKey("ContainerTypeId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("CleanArchitecture.Domain.Entities.Customer", "Customer")
-                        .WithMany("DeliveryOrders")
-                        .HasForeignKey("CustomerId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("CleanArchitecture.Domain.Entities.LineOperator", "LineOperator")
-                        .WithMany("DeliveryOrders")
-                        .HasForeignKey("LineOperatorId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("ContainerType");
-
-                    b.Navigation("Customer");
-
-                    b.Navigation("LineOperator");
                 });
 
             modelBuilder.Entity("CleanArchitecture.Domain.Entities.RefreshToken", b =>
@@ -917,28 +761,9 @@ namespace CleanArchitecture.Infrastructure.Migrations
                     b.Navigation("ContainerTransactions");
                 });
 
-            modelBuilder.Entity("CleanArchitecture.Domain.Entities.ContainerType", b =>
-                {
-                    b.Navigation("Containers");
-
-                    b.Navigation("DeliveryOrders");
-                });
-
-            modelBuilder.Entity("CleanArchitecture.Domain.Entities.Customer", b =>
-                {
-                    b.Navigation("DeliveryOrders");
-                });
-
             modelBuilder.Entity("CleanArchitecture.Domain.Entities.Depot", b =>
                 {
                     b.Navigation("Blocks");
-                });
-
-            modelBuilder.Entity("CleanArchitecture.Domain.Entities.LineOperator", b =>
-                {
-                    b.Navigation("Containers");
-
-                    b.Navigation("DeliveryOrders");
                 });
 
             modelBuilder.Entity("CleanArchitecture.Domain.Entities.Media", b =>

@@ -9,6 +9,10 @@ public interface IUnitOfWork
     IDepotRepository DepotRepository { get; }
     IContainerPositionRepository ContainerPositionRepository { get; }
     IContainerTransactionRepository ContainerTransactionRepository { get; }
+    ICustomerRepository CustomerRepository { get; }
+    ILineOperatorRepository LineOperatorRepository { get; }
+    IContainerTypeRepository ContainerTypeRepository { get; }
+    IDeliveryOrderRepository DeliveryOrderRepository { get; }
     IRefreshTokenRepository RefreshTokenRepository { get; }
     IMediaRepository MediaRepository { get; }
     Task SaveChangesAsync(CancellationToken token);

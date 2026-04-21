@@ -34,6 +34,10 @@ public static class ConfigureServices
         services.AddScoped<IBlockRepository, BlockRepository>();
         services.AddTransient<IContainerPositionRepository, ContainerPositionRepository>();
         services.AddTransient<IContainerTransactionRepository, ContainerTransactionRepository>();
+        services.AddTransient<ICustomerRepository, CustomerRepository>();
+        services.AddTransient<ILineOperatorRepository, LineOperatorRepository>();
+        services.AddTransient<IContainerTypeRepository, ContainerTypeRepository>();
+        services.AddTransient<IDeliveryOrderRepository, DeliveryOrderRepository>();
         services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
         services.AddScoped<IMediaRepository, MediaRepository>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();

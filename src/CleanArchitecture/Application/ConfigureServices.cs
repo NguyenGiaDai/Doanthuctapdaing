@@ -15,6 +15,10 @@ public static class ConfigureServices
         services.AddTransient<IBlockService, BlockService>();
         services.AddTransient<IContainerPositionService, ContainerPositionService>();
         services.AddTransient<IContainerTransactionService, ContainerTransactionService>();
+        services.AddTransient<ICustomerService, CustomerService>();
+        services.AddTransient<ILineOperatorService, LineOperatorService>();
+        services.AddTransient<IContainerTypeService, ContainerTypeService>();
+        services.AddTransient<IDeliveryOrderService, DeliveryOrderService>();
         services.AddTransient<IMediaService, MediaService>();
         services.AddTransient<IRoleService, RoleService>();
         services.AddTransient<IAuthIdentityService, AuthIdentityService>();
