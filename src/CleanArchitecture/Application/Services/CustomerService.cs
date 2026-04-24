@@ -1,4 +1,5 @@
 using AutoMapper;
+using CleanArchitecture.Application.Common.Exceptions;
 using CleanArchitecture.Application.Common.Interfaces;
 using CleanArchitecture.Shared.Models;
 using CleanArchitecture.Shared.Models.Customer;
@@ -32,19 +33,30 @@ public class CustomerService(IUnitOfWork unitOfWork, IMapper mapper) : ICustomer
         var customer = await _unitOfWork.CustomerRepository.FirstOrDefaultAsync(x => x.Id == id);
 
         if (customer == null)
-            throw new Exception("Customer not found");
+            throw new UserFriendlyException(ErrorCode.NotFound, "Customer not found");
 
         return _mapper.Map<CustomerResponse>(customer);
     }
 
     public async Task<int> Create(CreateCustomerRequest request)
     {
-        var isExist = await _unitOfWork.CustomerRepository.AnyAsync(x => x.CustomerCode == request.CustomerCode);
+        ValidateRequest(request.CustomerCode, request.CustomerName, request.Address);
+
+        var normalizedCode = request.CustomerCode.Trim().ToUpper();
+        var normalizedName = request.CustomerName.Trim();
+        var normalizedTaxCode = request.CustomerTaxCode?.Trim();
+        var normalizedAddress = request.Address.Trim();
+
+        var isExist = await _unitOfWork.CustomerRepository.AnyAsync(x => x.CustomerCode == normalizedCode);
 
         if (isExist)
-            throw new Exception("Customer code already exists");
+            throw new UserFriendlyException(ErrorCode.Conflict, "Customer code already exists");
 
         var customer = _mapper.Map<Customer>(request);
+        customer.CustomerCode = normalizedCode;
+        customer.CustomerName = normalizedName;
+        customer.CustomerTaxCode = normalizedTaxCode;
+        customer.Address = normalizedAddress;
 
         await _unitOfWork.ExecuteTransactionAsync(async () =>
             await _unitOfWork.CustomerRepository.AddAsync(customer), CancellationToken.None);
@@ -54,25 +66,44 @@ public class CustomerService(IUnitOfWork unitOfWork, IMapper mapper) : ICustomer
 
     public async Task Update(int id, UpdateCustomerRequest request)
     {
+        ValidateRequest(request.CustomerCode, request.CustomerName, request.Address);
+
         var customer = await _unitOfWork.CustomerRepository.FirstOrDefaultAsync(x => x.Id == id);
 
         if (customer == null)
-            throw new Exception("Customer not found");
+            throw new UserFriendlyException(ErrorCode.NotFound, "Customer not found");
+
+        var normalizedCode = request.CustomerCode.Trim().ToUpper();
+        var normalizedName = request.CustomerName.Trim();
+        var normalizedTaxCode = request.CustomerTaxCode?.Trim();
+        var normalizedAddress = request.Address.Trim();
 
         var isDuplicate = await _unitOfWork.CustomerRepository.AnyAsync(x =>
-            x.Id != id && x.CustomerCode == request.CustomerCode);
+            x.Id != id && x.CustomerCode == normalizedCode);
 
         if (isDuplicate)
-            throw new Exception("Customer code already exists");
+            throw new UserFriendlyException(ErrorCode.Conflict, "Customer code already exists");
 
-        customer.CustomerCode = request.CustomerCode;
-        customer.CustomerName = request.CustomerName;
-        customer.CustomerTaxCode = request.CustomerTaxCode;
-        customer.Address = request.Address;
+        customer.CustomerCode = normalizedCode;
+        customer.CustomerName = normalizedName;
+        customer.CustomerTaxCode = normalizedTaxCode;
+        customer.Address = normalizedAddress;
 
         await _unitOfWork.ExecuteTransactionAsync(() =>
         {
             _unitOfWork.CustomerRepository.Update(customer);
         }, CancellationToken.None);
+    }
+
+    private static void ValidateRequest(string customerCode, string customerName, string address)
+    {
+        if (string.IsNullOrWhiteSpace(customerCode))
+            throw new UserFriendlyException(ErrorCode.BadRequest, "Customer code is required");
+
+        if (string.IsNullOrWhiteSpace(customerName))
+            throw new UserFriendlyException(ErrorCode.BadRequest, "Customer name is required");
+
+        if (string.IsNullOrWhiteSpace(address))
+            throw new UserFriendlyException(ErrorCode.BadRequest, "Address is required");
     }
 }

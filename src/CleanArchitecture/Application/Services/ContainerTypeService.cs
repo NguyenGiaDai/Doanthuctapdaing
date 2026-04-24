@@ -1,4 +1,5 @@
 using AutoMapper;
+using CleanArchitecture.Application.Common.Exceptions;
 using CleanArchitecture.Application.Common.Interfaces;
 using CleanArchitecture.Shared.Models;
 using CleanArchitecture.Shared.Models.ContainerType;
@@ -34,19 +35,34 @@ public class ContainerTypeService(IUnitOfWork unitOfWork, IMapper mapper) : ICon
         var containerType = await _unitOfWork.ContainerTypeRepository.FirstOrDefaultAsync(x => x.Id == id);
 
         if (containerType == null)
-            throw new Exception("Container type not found");
+            throw new UserFriendlyException(ErrorCode.NotFound, "Container type not found");
 
         return _mapper.Map<ContainerTypeResponse>(containerType);
     }
 
     public async Task<int> Create(CreateContainerTypeRequest request)
     {
-        var isExist = await _unitOfWork.ContainerTypeRepository.AnyAsync(x => x.ContainerTypeCode == request.ContainerTypeCode);
+        ValidateRequest(
+            request.ContainerTypeCode,
+            request.ContainerTypeName,
+            request.ISOCode,
+            request.ContainerSize,
+            request.MaximumWeight,
+            request.TareWeight);
+
+        var normalizedCode = request.ContainerTypeCode.Trim().ToUpper();
+        var normalizedName = request.ContainerTypeName.Trim();
+        var normalizedIsoCode = request.ISOCode.Trim().ToUpper();
+
+        var isExist = await _unitOfWork.ContainerTypeRepository.AnyAsync(x => x.ContainerTypeCode == normalizedCode);
 
         if (isExist)
-            throw new Exception("Container type code already exists");
+            throw new UserFriendlyException(ErrorCode.Conflict, "Container type code already exists");
 
         var containerType = _mapper.Map<ContainerType>(request);
+        containerType.ContainerTypeCode = normalizedCode;
+        containerType.ContainerTypeName = normalizedName;
+        containerType.ISOCode = normalizedIsoCode;
 
         await _unitOfWork.ExecuteTransactionAsync(async () =>
             await _unitOfWork.ContainerTypeRepository.AddAsync(containerType), CancellationToken.None);
@@ -56,20 +72,32 @@ public class ContainerTypeService(IUnitOfWork unitOfWork, IMapper mapper) : ICon
 
     public async Task Update(int id, UpdateContainerTypeRequest request)
     {
+        ValidateRequest(
+            request.ContainerTypeCode,
+            request.ContainerTypeName,
+            request.ISOCode,
+            request.ContainerSize,
+            request.MaximumWeight,
+            request.TareWeight);
+
         var containerType = await _unitOfWork.ContainerTypeRepository.FirstOrDefaultAsync(x => x.Id == id);
 
         if (containerType == null)
-            throw new Exception("Container type not found");
+            throw new UserFriendlyException(ErrorCode.NotFound, "Container type not found");
+
+        var normalizedCode = request.ContainerTypeCode.Trim().ToUpper();
+        var normalizedName = request.ContainerTypeName.Trim();
+        var normalizedIsoCode = request.ISOCode.Trim().ToUpper();
 
         var isDuplicate = await _unitOfWork.ContainerTypeRepository.AnyAsync(x =>
-            x.Id != id && x.ContainerTypeCode == request.ContainerTypeCode);
+            x.Id != id && x.ContainerTypeCode == normalizedCode);
 
         if (isDuplicate)
-            throw new Exception("Container type code already exists");
+            throw new UserFriendlyException(ErrorCode.Conflict, "Container type code already exists");
 
-        containerType.ContainerTypeCode = request.ContainerTypeCode;
-        containerType.ContainerTypeName = request.ContainerTypeName;
-        containerType.ISOCode = request.ISOCode;
+        containerType.ContainerTypeCode = normalizedCode;
+        containerType.ContainerTypeName = normalizedName;
+        containerType.ISOCode = normalizedIsoCode;
         containerType.ContainerSize = request.ContainerSize;
         containerType.MaximumWeight = request.MaximumWeight;
         containerType.TareWeight = request.TareWeight;
@@ -78,5 +106,32 @@ public class ContainerTypeService(IUnitOfWork unitOfWork, IMapper mapper) : ICon
         {
             _unitOfWork.ContainerTypeRepository.Update(containerType);
         }, CancellationToken.None);
+    }
+
+    private static void ValidateRequest(
+        string containerTypeCode,
+        string containerTypeName,
+        string isoCode,
+        int containerSize,
+        decimal? maximumWeight,
+        decimal? tareWeight)
+    {
+        if (string.IsNullOrWhiteSpace(containerTypeCode))
+            throw new UserFriendlyException(ErrorCode.BadRequest, "Container type code is required");
+
+        if (string.IsNullOrWhiteSpace(containerTypeName))
+            throw new UserFriendlyException(ErrorCode.BadRequest, "Container type name is required");
+
+        if (string.IsNullOrWhiteSpace(isoCode))
+            throw new UserFriendlyException(ErrorCode.BadRequest, "ISO code is required");
+
+        if (containerSize <= 0)
+            throw new UserFriendlyException(ErrorCode.BadRequest, "Container size must be greater than 0");
+
+        if (maximumWeight.HasValue && maximumWeight.Value <= 0)
+            throw new UserFriendlyException(ErrorCode.BadRequest, "Maximum weight must be greater than 0");
+
+        if (tareWeight.HasValue && tareWeight.Value <= 0)
+            throw new UserFriendlyException(ErrorCode.BadRequest, "Tare weight must be greater than 0");
     }
 }

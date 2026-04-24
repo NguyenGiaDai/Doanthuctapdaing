@@ -3,14 +3,20 @@ using CleanArchitecture.Application.Common.Exceptions;
 using CleanArchitecture.Application.Common.Interfaces;
 using CleanArchitecture.Shared.Models;
 using CleanArchitecture.Shared.Models.ContainerTransaction;
+using CleanArchitecture.Infrastructure.Data;
+using Microsoft.EntityFrameworkCore;
 using CleanArchitecture.Shared.Models.Errors;
 
 namespace CleanArchitecture.Application.Services;
 
-public class ContainerTransactionService(IUnitOfWork unitOfWork, IMapper mapper) : IContainerTransactionService
+public class ContainerTransactionService(
+    IUnitOfWork unitOfWork,
+    IMapper mapper,
+    ApplicationDbContext context) : IContainerTransactionService
 {
     private readonly IUnitOfWork _unitOfWork = unitOfWork;
     private readonly IMapper _mapper = mapper;
+    private readonly ApplicationDbContext _context = context;
 
     public async Task<Pagination<ContainerTransactionResponse>> GetAll(int pageNumber, int pageSize)
     {
@@ -46,7 +52,7 @@ public class ContainerTransactionService(IUnitOfWork unitOfWork, IMapper mapper)
         var transaction = await _unitOfWork.ContainerTransactionRepository.FirstOrDefaultAsync(x => x.Id == id);
 
         if (transaction == null)
-            throw BuildValidationException("Container transaction not found");
+            throw new UserFriendlyException(ErrorCode.NotFound, "Container transaction not found");
 
         return _mapper.Map<ContainerTransactionResponse>(transaction);
     }
@@ -72,7 +78,7 @@ public class ContainerTransactionService(IUnitOfWork unitOfWork, IMapper mapper)
         var transaction = await _unitOfWork.ContainerTransactionRepository.FirstOrDefaultAsync(x => x.Id == id);
 
         if (transaction == null)
-            throw BuildValidationException("Container transaction not found");
+            throw new UserFriendlyException(ErrorCode.NotFound, "Container transaction not found");
 
         await ValidateRequest(request.ContainerId, request.TransactionType,
             request.FromBlockId, request.FromBay, request.FromRow, request.FromTier,
@@ -96,6 +102,243 @@ public class ContainerTransactionService(IUnitOfWork unitOfWork, IMapper mapper)
         {
             _unitOfWork.ContainerTransactionRepository.Update(transaction);
         }, CancellationToken.None);
+    }
+    public async Task<int> ImportContainer(ImportContainerRequest request)
+    {
+        var container = await _unitOfWork.ContainerRepository.FirstOrDefaultAsync(
+            x => x.Id == request.ContainerId,
+            q => q.Include(c => c.ContainerTypeNavigation));
+        
+        if (container == null)
+            throw new UserFriendlyException(ErrorCode.NotFound, "Container not found");
+        
+        if (container.CurrentStatus == "InYard")
+            throw BuildValidationException("Container is already in yard and cannot be imported again");
+
+        var block = await _unitOfWork.BlockRepository.FirstOrDefaultAsync(x => x.Id == request.ToBlockId);
+        
+        if (block == null)
+            throw new UserFriendlyException(ErrorCode.NotFound, "Block not found");
+
+        ValidatePositionInBlock(
+            block.BlockType,
+            block.MaxBay,
+            block.MaxRow,
+            block.MaxTier,
+            request.ToBay,
+            request.ToRow,
+            request.ToTier,
+            "To");
+        
+        if (container.ContainerTypeNavigation?.ContainerSize == 20 && request.ToBay % 2 == 0)
+            throw BuildValidationException("20ft container must be placed in an odd bay");
+
+        if (container.ContainerTypeNavigation?.ContainerSize == 40 && request.ToBay % 2 != 0)
+            throw BuildValidationException("40ft container must be placed in an even bay");
+        
+        var occupiedPosition = await _unitOfWork.ContainerPositionRepository.FirstOrDefaultAsync(
+            x => x.BlockId == request.ToBlockId
+                 && x.Bay == request.ToBay
+                 && x.Row == request.ToRow
+                 && x.Tier == request.ToTier
+                 && x.ContainerId != request.ContainerId);
+
+        if (occupiedPosition != null)
+            throw BuildValidationException("This yard position is already occupied by another container");
+
+        var existingPosition = await _unitOfWork.ContainerPositionRepository
+            .FirstOrDefaultAsync(x => x.ContainerId == request.ContainerId);
+
+        var transaction = new ContainerTransaction
+        {
+            ContainerId = request.ContainerId,
+            TransactionType = "In",
+            FromBlockId = null,
+            FromBay = null,
+            FromRow = null,
+            FromTier = null,
+            ToBlockId = request.ToBlockId,
+            ToBay = request.ToBay,
+            ToRow = request.ToRow,
+            ToTier = request.ToTier,
+            VehicleNumber = request.VehicleNumber,
+            TransactionTime = request.TransactionTime ?? DateTime.UtcNow,
+            Note = request.Note
+        };
+
+        await _unitOfWork.ExecuteTransactionAsync(async () =>
+        {
+            await _unitOfWork.ContainerTransactionRepository.AddAsync(transaction);
+
+            if (existingPosition == null)
+            {
+                var newPosition = new ContainerPosition
+                {
+                    ContainerId = request.ContainerId,
+                    BlockId = request.ToBlockId,
+                    Bay = request.ToBay,
+                    Row = request.ToRow,
+                    Tier = request.ToTier,
+                    PositionTime = request.TransactionTime ?? DateTime.UtcNow
+                };
+
+                await _unitOfWork.ContainerPositionRepository.AddAsync(newPosition);
+            }
+            else
+            {
+                existingPosition.BlockId = request.ToBlockId;
+                existingPosition.Bay = request.ToBay;
+                existingPosition.Row = request.ToRow;
+                existingPosition.Tier = request.ToTier;
+                existingPosition.PositionTime = request.TransactionTime ?? DateTime.UtcNow;
+
+                _unitOfWork.ContainerPositionRepository.Update(existingPosition);
+            }
+
+            container.CurrentStatus = "InYard";
+            _unitOfWork.ContainerRepository.Update(container);
+        }, CancellationToken.None);
+
+        return transaction.Id;
+    }
+    public async Task<int> ExportContainer(ExportContainerRequest request)
+    {
+        var container = await _unitOfWork.ContainerRepository.FirstOrDefaultAsync(x => x.Id == request.ContainerId);
+        
+        if (container == null)
+            throw new UserFriendlyException(ErrorCode.NotFound, "Container not found");
+        
+        if (container.CurrentStatus != "InYard")
+            throw BuildValidationException("Container is not currently in yard and cannot be exported");
+
+        var deliveryOrder = await _unitOfWork.DeliveryOrderRepository
+            .FirstOrDefaultAsync(x => x.Id == request.DeliveryOrderId);
+
+        if (deliveryOrder == null)
+            throw new UserFriendlyException(ErrorCode.NotFound, "Delivery order not found");
+        
+        if (deliveryOrder.ExpiryDate.Date < DateTime.UtcNow.Date)
+            throw BuildValidationException("Delivery order has expired and cannot be used for export");
+        
+        if (container.LineOperatorId != deliveryOrder.LineOperatorId)
+            throw BuildValidationException("Delivery order line operator does not match container line operator");
+
+        if (container.ContainerTypeId != deliveryOrder.ContainerTypeId)
+            throw BuildValidationException("Delivery order container type does not match container type");
+        
+        var currentPosition = await _unitOfWork.ContainerPositionRepository
+            .FirstOrDefaultAsync(x => x.ContainerId == request.ContainerId);
+
+        if (currentPosition == null)
+            throw BuildValidationException("Container is not currently in yard");
+
+        var transaction = new ContainerTransaction
+        {
+            ContainerId = request.ContainerId,
+            TransactionType = "Out",
+            FromBlockId = currentPosition.BlockId,
+            FromBay = currentPosition.Bay,
+            FromRow = currentPosition.Row,
+            FromTier = currentPosition.Tier,
+            ToBlockId = null,
+            ToBay = null,
+            ToRow = null,
+            ToTier = null,
+            VehicleNumber = request.VehicleNumber,
+            TransactionTime = request.TransactionTime ?? DateTime.UtcNow,
+            Note = request.Note
+        };
+
+        await _unitOfWork.ExecuteTransactionAsync(async () =>
+        {
+            await _unitOfWork.ContainerTransactionRepository.AddAsync(transaction);
+
+            _unitOfWork.ContainerPositionRepository.Delete(currentPosition);
+
+            container.CurrentStatus = "OutYard";
+            _unitOfWork.ContainerRepository.Update(container);
+        }, CancellationToken.None);
+
+        return transaction.Id;
+    }
+    public async Task<List<ContainerThroughputReportResponse>> GetContainerThroughputReport(ContainerThroughputReportRequest request)
+    {
+        var startDate = request.Date.Date;
+        var endDate = startDate.AddDays(1);
+
+        var report = await _context.ContainerTransactions
+            .Include(x => x.Container)
+            .ThenInclude(c => c.LineOperator)
+            .Where(x => x.TransactionTime >= startDate && x.TransactionTime < endDate)
+            .GroupBy(x => new
+            {
+                x.Container.LineOperatorId,
+                LineOperatorCode = x.Container.LineOperator != null ? x.Container.LineOperator.LineOperatorCode : string.Empty,
+                LineOperatorName = x.Container.LineOperator != null ? x.Container.LineOperator.LineOperatorName : string.Empty
+            })
+            .Select(g => new ContainerThroughputReportResponse
+            {
+                LineOperatorId = g.Key.LineOperatorId,
+                LineOperatorCode = g.Key.LineOperatorCode,
+                LineOperatorName = g.Key.LineOperatorName,
+                ImportCount = g.Count(x => x.TransactionType == "In"),
+                ExportCount = g.Count(x => x.TransactionType == "Out"),
+                TotalCount = g.Count()
+            })
+            .OrderBy(x => x.LineOperatorCode)
+            .ToListAsync();
+
+        return report;
+    }
+    public async Task<List<ContainerYardInventoryReportResponse>> GetContainerYardInventoryReport(ContainerYardInventoryReportRequest request)
+    {
+        var reportDate = request.Date.Date;
+
+        var containersInYard = await _context.Containers
+            .Include(x => x.LineOperator)
+            .Include(x => x.ContainerTransactions)
+            .Where(x => x.CurrentStatus == "InYard")
+            .ToListAsync();
+
+        var report = containersInYard
+            .Select(container =>
+            {
+                var firstImport = container.ContainerTransactions
+                    .Where(t => t.TransactionType == "In" && t.TransactionTime <= reportDate.AddDays(1).AddTicks(-1))
+                    .OrderBy(t => t.TransactionTime)
+                    .FirstOrDefault();
+
+                var daysInYard = firstImport == null
+                    ? 0
+                    : (reportDate - firstImport.TransactionTime.Date).Days;
+
+                return new
+                {
+                    container.LineOperatorId,
+                    LineOperatorCode = container.LineOperator != null ? container.LineOperator.LineOperatorCode : string.Empty,
+                    LineOperatorName = container.LineOperator != null ? container.LineOperator.LineOperatorName : string.Empty,
+                    DaysInYard = daysInYard
+                };
+            })
+            .GroupBy(x => new
+            {
+                x.LineOperatorId,
+                x.LineOperatorCode,
+                x.LineOperatorName
+            })
+            .Select(g => new ContainerYardInventoryReportResponse
+            {
+                LineOperatorId = g.Key.LineOperatorId,
+                LineOperatorCode = g.Key.LineOperatorCode,
+                LineOperatorName = g.Key.LineOperatorName,
+                From0To10DaysCount = g.Count(x => x.DaysInYard >= 0 && x.DaysInYard < 10),
+                From10DaysOrMoreCount = g.Count(x => x.DaysInYard >= 10),
+                TotalInYardCount = g.Count()
+            })
+            .OrderBy(x => x.LineOperatorCode)
+            .ToList();
+
+        return report;
     }
 
     private async Task ValidateRequest(

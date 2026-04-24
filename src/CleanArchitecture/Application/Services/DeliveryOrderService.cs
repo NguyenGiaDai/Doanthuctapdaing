@@ -45,7 +45,7 @@ public class DeliveryOrderService(IUnitOfWork unitOfWork, IMapper mapper) : IDel
         var deliveryOrder = await _unitOfWork.DeliveryOrderRepository.FirstOrDefaultAsync(x => x.Id == id);
 
         if (deliveryOrder == null)
-            throw BuildValidationException("Delivery order not found");
+            throw new UserFriendlyException(ErrorCode.NotFound, "Delivery order not found");
 
         return _mapper.Map<DeliveryOrderResponse>(deliveryOrder);
     }
@@ -73,7 +73,7 @@ public class DeliveryOrderService(IUnitOfWork unitOfWork, IMapper mapper) : IDel
         var deliveryOrder = await _unitOfWork.DeliveryOrderRepository.FirstOrDefaultAsync(x => x.Id == id);
 
         if (deliveryOrder == null)
-            throw BuildValidationException("Delivery order not found");
+            throw new UserFriendlyException(ErrorCode.NotFound, "Delivery order not found");
 
         await ValidateRequest(
             request.DONumber,
@@ -116,19 +116,19 @@ public class DeliveryOrderService(IUnitOfWork unitOfWork, IMapper mapper) : IDel
             x.DONumber == doNumber && (!currentId.HasValue || x.Id != currentId.Value));
 
         if (isDuplicate)
-            throw BuildValidationException("DO number already exists");
+            throw new UserFriendlyException(ErrorCode.Conflict, "DO number already exists");
 
         var customer = await _unitOfWork.CustomerRepository.FirstOrDefaultAsync(x => x.Id == customerId);
         if (customer == null)
-            throw BuildValidationException("Customer not found");
+            throw new UserFriendlyException(ErrorCode.NotFound, "Customer not found");
 
         var lineOperator = await _unitOfWork.LineOperatorRepository.FirstOrDefaultAsync(x => x.Id == lineOperatorId);
         if (lineOperator == null)
-            throw BuildValidationException("Line operator not found");
+            throw new UserFriendlyException(ErrorCode.NotFound, "Line operator not found");
 
         var containerType = await _unitOfWork.ContainerTypeRepository.FirstOrDefaultAsync(x => x.Id == containerTypeId);
         if (containerType == null)
-            throw BuildValidationException("Container type not found");
+            throw new UserFriendlyException(ErrorCode.NotFound, "Container type not found");
 
         if (quantity <= 0)
             throw BuildValidationException("Quantity must be greater than 0");

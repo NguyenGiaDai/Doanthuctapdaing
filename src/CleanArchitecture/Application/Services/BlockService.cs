@@ -1,5 +1,6 @@
 using AutoMapper;
 using CleanArchitecture.Application.Common.Exceptions;
+using CleanArchitecture.Application.Common.Interfaces;
 using CleanArchitecture.Shared.Models;
 using CleanArchitecture.Shared.Models.Block;
 using CleanArchitecture.Shared.Models.Errors;
@@ -41,7 +42,7 @@ public class BlockService(IUnitOfWork unitOfWork, IMapper mapper) : IBlockServic
         var block = await _unitOfWork.BlockRepository.FirstOrDefaultAsync(x => x.Id == id);
 
         if (block == null)
-            throw BuildValidationException("Block not found");
+            throw new UserFriendlyException(ErrorCode.NotFound, "Block not found");
 
         return _mapper.Map<BlockResponse>(block);
     }
@@ -51,14 +52,15 @@ public class BlockService(IUnitOfWork unitOfWork, IMapper mapper) : IBlockServic
         var depot = await _unitOfWork.DepotRepository.FirstOrDefaultAsync(x => x.Id == request.DepotId);
 
         if (depot == null)
-            throw BuildValidationException("Depot not found");
+            throw new UserFriendlyException(ErrorCode.NotFound, "Depot not found");
+
         ValidateBlockType(request.BlockType, request.MaxBay, request.MaxRow, request.MaxTier);
 
         var isExist = await _unitOfWork.BlockRepository.AnyAsync(x =>
             x.DepotId == request.DepotId && x.BlockCode == request.BlockCode);
 
         if (isExist)
-            throw BuildValidationException("Block code already exists in this depot");
+            throw new UserFriendlyException(ErrorCode.Conflict, "Block code already exists in this depot");
 
         var block = _mapper.Map<Block>(request);
 
@@ -73,13 +75,14 @@ public class BlockService(IUnitOfWork unitOfWork, IMapper mapper) : IBlockServic
         var block = await _unitOfWork.BlockRepository.FirstOrDefaultAsync(x => x.Id == id);
 
         if (block == null)
-            throw BuildValidationException("Block not found");
+            throw new UserFriendlyException(ErrorCode.NotFound, "Block not found");
+
         ValidateBlockType(request.BlockType, request.MaxBay, request.MaxRow, request.MaxTier);
 
         var depot = await _unitOfWork.DepotRepository.FirstOrDefaultAsync(x => x.Id == request.DepotId);
 
         if (depot == null)
-            throw BuildValidationException("Depot not found");
+            throw new UserFriendlyException(ErrorCode.NotFound, "Depot not found");
 
         var isDuplicate = await _unitOfWork.BlockRepository.AnyAsync(x =>
             x.Id != id &&
@@ -87,7 +90,7 @@ public class BlockService(IUnitOfWork unitOfWork, IMapper mapper) : IBlockServic
             x.BlockCode == request.BlockCode);
 
         if (isDuplicate)
-            throw BuildValidationException("Block code already exists in this depot");
+            throw new UserFriendlyException(ErrorCode.Conflict, "Block code already exists in this depot");
 
         block.DepotId = request.DepotId;
         block.BlockCode = request.BlockCode;
@@ -102,6 +105,7 @@ public class BlockService(IUnitOfWork unitOfWork, IMapper mapper) : IBlockServic
             _unitOfWork.BlockRepository.Update(block);
         }, CancellationToken.None);
     }
+
     private static void ValidateBlockType(string blockType, int? maxBay, int? maxRow, int? maxTier)
     {
         if (string.IsNullOrWhiteSpace(blockType))
@@ -125,6 +129,7 @@ public class BlockService(IUnitOfWork unitOfWork, IMapper mapper) : IBlockServic
                 throw BuildValidationException("Virtual block must not have MaxBay, MaxRow or MaxTier");
         }
     }
+
     private static ValidationException BuildValidationException(string message)
     {
         return new ValidationException(

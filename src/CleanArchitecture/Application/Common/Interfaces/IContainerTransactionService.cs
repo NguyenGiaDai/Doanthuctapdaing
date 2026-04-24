@@ -9,4 +9,9 @@ public interface IContainerTransactionService
     Task<ContainerTransactionResponse> Get(int id);
     Task<int> Create(CreateContainerTransactionRequest request);
     Task Update(int id, UpdateContainerTransactionRequest request);
+
+    Task<int> ImportContainer(ImportContainerRequest request);
+    Task<int> ExportContainer(ExportContainerRequest request);
+    Task<List<ContainerThroughputReportResponse>> GetContainerThroughputReport(ContainerThroughputReportRequest request);
+    Task<List<ContainerYardInventoryReportResponse>> GetContainerYardInventoryReport(ContainerYardInventoryReportRequest request);
 }

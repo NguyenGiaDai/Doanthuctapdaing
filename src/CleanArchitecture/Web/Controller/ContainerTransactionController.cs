@@ -41,6 +41,46 @@ public class ContainerTransactionController(IContainerTransactionService contain
     [SwaggerResponse(200, "Container transaction created successfully.", typeof(int))]
     public async Task<IActionResult> Create([FromBody] CreateContainerTransactionRequest request)
         => Ok(await _containerTransactionService.Create(request));
+    
+    /// <summary>
+    /// import a container into depot
+    /// </summary>
+    /// <param name="request"></param>
+    /// <returns></returns>
+    [HttpPost("import")]
+    [SwaggerResponse(200, "Container imported successfully.", typeof(int))]
+    public async Task<IActionResult> ImportContainer([FromBody] ImportContainerRequest request)
+        => Ok(await _containerTransactionService.ImportContainer(request));
+    
+    /// <summary>
+    /// export a container out of depot
+    /// </summary>
+    /// <param name="request"></param>
+    /// <returns></returns>
+    [HttpPost("export")]
+    [SwaggerResponse(200, "Container exported successfully.", typeof(int))]
+    public async Task<IActionResult> ExportContainer([FromBody] ExportContainerRequest request)
+        => Ok(await _containerTransactionService.ExportContainer(request));
+    
+    /// <summary>
+    /// report import/export throughput by line operator by date
+    /// </summary>
+    /// <param name="request"></param>
+    /// <returns></returns>
+    [HttpPost("report/throughput-by-line-operator")]
+    [SwaggerResponse(200, "Container throughput report retrieved successfully.", typeof(List<ContainerThroughputReportResponse>))]
+    public async Task<IActionResult> GetContainerThroughputReport([FromBody] ContainerThroughputReportRequest request)
+        => Ok(await _containerTransactionService.GetContainerThroughputReport(request));
+    
+    /// <summary>
+    /// report container inventory in yard by line operator and storage time
+    /// </summary>
+    /// <param name="request"></param>
+    /// <returns></returns>
+    [HttpPost("report/yard-inventory-by-line-operator")]
+    [SwaggerResponse(200, "Container yard inventory report retrieved successfully.", typeof(List<ContainerYardInventoryReportResponse>))]
+    public async Task<IActionResult> GetContainerYardInventoryReport([FromBody] ContainerYardInventoryReportRequest request)
+        => Ok(await _containerTransactionService.GetContainerYardInventoryReport(request));
 
     /// <summary>
     /// update a container transaction
