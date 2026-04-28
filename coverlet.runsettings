@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<RunSettings>
+  <DataCollectionRunSettings>
+    <DataCollectors>
+      <DataCollector friendlyName="XPlat Code Coverage">
+        <Configuration>
+          <Format>cobertura</Format>
+
+          <Include>
+            [CleanArchitecture]CleanArchitecture.Application.Services.ContainerService,
+            [CleanArchitecture]CleanArchitecture.Application.Services.ContainerTransactionService,
+            [CleanArchitecture]CleanArchitecture.Application.Services.ContainerPositionService,
+            [CleanArchitecture]CleanArchitecture.Application.Services.DeliveryOrderService,
+            [CleanArchitecture]CleanArchitecture.Application.Services.BlockService,
+            [CleanArchitecture]CleanArchitecture.Application.Services.ContainerTypeService,
+            [CleanArchitecture]CleanArchitecture.Application.Services.LineOperatorService,
+            [CleanArchitecture]CleanArchitecture.Application.Services.CustomerService,
+            [CleanArchitecture]CleanArchitecture.Application.Services.DepotService,
+
+            [CleanArchitecture]CleanArchitecture.Domain.Entities.Container,
+            [CleanArchitecture]CleanArchitecture.Domain.Entities.ContainerTransaction,
+            [CleanArchitecture]CleanArchitecture.Domain.Entities.ContainerPosition,
+            [CleanArchitecture]CleanArchitecture.Domain.Entities.DeliveryOrder,
+            [CleanArchitecture]CleanArchitecture.Domain.Entities.Block,
+            [CleanArchitecture]CleanArchitecture.Domain.Entities.ContainerType,
+            [CleanArchitecture]CleanArchitecture.Domain.Entities.LineOperator,
+            [CleanArchitecture]CleanArchitecture.Domain.Entities.Customer,
+            [CleanArchitecture]CleanArchitecture.Domain.Entities.Depot,
+
+            [CleanArchitecture]CleanArchitecture.Web.Controller.ContainerController,
+            [CleanArchitecture]CleanArchitecture.Web.Controller.ContainerTransactionController,
+            [CleanArchitecture]CleanArchitecture.Web.Controller.ContainerPositionController,
+            [CleanArchitecture]CleanArchitecture.Web.Controller.DeliveryOrderController,
+            [CleanArchitecture]CleanArchitecture.Web.Controller.BlockController,
+            [CleanArchitecture]CleanArchitecture.Web.Controller.ContainerTypeController,
+            [CleanArchitecture]CleanArchitecture.Web.Controller.LineOperatorController,
+            [CleanArchitecture]CleanArchitecture.Web.Controller.CustomerController,
+            [CleanArchitecture]CleanArchitecture.Web.Controller.DepotController
+          </Include>
+
+          <Exclude>
+            [CleanArchitecture.Shared]*,
+            [CleanArchitecture.UnitTests]*
+          </Exclude>
+
+          <ExcludeByAttribute>
+            Obsolete,
+            GeneratedCodeAttribute,
+            CompilerGeneratedAttribute
+          </ExcludeByAttribute>
+        </Configuration>
+      </DataCollector>
+    </DataCollectors>
+  </DataCollectionRunSettings>
+</RunSettings>
