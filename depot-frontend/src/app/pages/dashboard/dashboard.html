@@ -1,1 +1,199 @@
-<p>dashboard works!</p>
+<div class="dashboard-page">
+  <section class="page-header">
+    <div>
+      <p class="page-kicker">Overview</p>
+      <h1>Depot Dashboard</h1>
+      <p class="page-description">
+        Tổng quan nhanh về container, hoạt động nhập/xuất và tình trạng tồn bãi trong depot.
+      </p>
+    </div>
+
+    <div class="page-actions">
+      <button type="button" class="secondary-button">Today</button>
+      <button type="button" class="primary-button">Export Report</button>
+    </div>
+  </section>
+
+  <section class="stat-grid">
+    <article class="summary-card">
+      <span>Total Containers</span>
+      <strong>248</strong>
+      <p>Tổng số container trong hệ thống</p>
+    </article>
+
+    <article class="summary-card">
+      <span>Containers In Yard</span>
+      <strong>136</strong>
+      <p>Container hiện đang nằm trong bãi</p>
+    </article>
+
+    <article class="summary-card">
+      <span>Today Import</span>
+      <strong>32</strong>
+      <p>Số container nhập bãi hôm nay</p>
+    </article>
+
+    <article class="summary-card">
+      <span>Today Export</span>
+      <strong>21</strong>
+      <p>Số container xuất bãi hôm nay</p>
+    </article>
+  </section>
+
+  <section class="dashboard-grid">
+    <article class="panel large-panel">
+      <div class="panel-header">
+        <div>
+          <h2>Recent Transactions</h2>
+          <p>Lịch sử nhập, xuất và di dời container gần nhất</p>
+        </div>
+
+        <span class="status-pill">Mock Data</span>
+      </div>
+
+      <table class="data-table">
+        <thead>
+        <tr>
+          <th>Container</th>
+          <th>Type</th>
+          <th>Line</th>
+          <th>Action</th>
+          <th>Position</th>
+          <th>Time</th>
+        </tr>
+        </thead>
+
+        <tbody>
+        <tr>
+          <td><strong>CMAU1234564</strong></td>
+          <td>20DC</td>
+          <td>CMA</td>
+          <td><span class="badge in">Import</span></td>
+          <td>A01 / Bay 03 / Row 02 / Tier 01</td>
+          <td>09:20</td>
+        </tr>
+
+        <tr>
+          <td><strong>MSCU7654321</strong></td>
+          <td>40HC</td>
+          <td>MSC</td>
+          <td><span class="badge out">Export</span></td>
+          <td>B02 / Bay 04 / Row 01 / Tier 02</td>
+          <td>10:05</td>
+        </tr>
+
+        <tr>
+          <td><strong>HMMU2468102</strong></td>
+          <td>20RF</td>
+          <td>HMM</td>
+          <td><span class="badge move">Move</span></td>
+          <td>C01 / Bay 01 / Row 03 / Tier 01</td>
+          <td>10:45</td>
+        </tr>
+
+        <tr>
+          <td><strong>OOLU1357924</strong></td>
+          <td>40DC</td>
+          <td>OOL</td>
+          <td><span class="badge in">Import</span></td>
+          <td>A02 / Bay 06 / Row 02 / Tier 01</td>
+          <td>11:10</td>
+        </tr>
+        </tbody>
+      </table>
+    </article>
+
+    <article class="panel">
+      <div class="panel-header">
+        <div>
+          <h2>Yard Occupancy</h2>
+          <p>Tỷ lệ sử dụng vị trí trong bãi</p>
+        </div>
+      </div>
+
+      <div class="occupancy-number">68%</div>
+
+      <div class="progress-track">
+        <div class="progress-fill"></div>
+      </div>
+
+      <p class="panel-note">136 occupied slots / 200 total slots</p>
+
+      <div class="mini-list">
+        <div>
+          <span>Normal</span>
+          <strong>118</strong>
+        </div>
+
+        <div>
+          <span>Damaged</span>
+          <strong>12</strong>
+        </div>
+
+        <div>
+          <span>Inspection</span>
+          <strong>6</strong>
+        </div>
+      </div>
+    </article>
+  </section>
+
+  <section class="dashboard-grid bottom-grid">
+    <article class="panel">
+      <div class="panel-header">
+        <div>
+          <h2>Top Line Operators</h2>
+          <p>Container đang tồn bãi theo hãng khai thác</p>
+        </div>
+      </div>
+
+      <div class="operator-list">
+        <div>
+          <span>CMA CGM</span>
+          <strong>42</strong>
+        </div>
+
+        <div>
+          <span>MSC</span>
+          <strong>35</strong>
+        </div>
+
+        <div>
+          <span>HMM</span>
+          <strong>28</strong>
+        </div>
+
+        <div>
+          <span>OOCL</span>
+          <strong>19</strong>
+        </div>
+      </div>
+    </article>
+
+    <article class="panel">
+      <div class="panel-header">
+        <div>
+          <h2>Alerts</h2>
+          <p>Cảnh báo nghiệp vụ để demo</p>
+        </div>
+      </div>
+
+      <div class="alert-list">
+        <div class="alert-item warning">
+          <strong>6 containers need inspection</strong>
+          <span>Cần kiểm tra trước khi xuất bãi.</span>
+        </div>
+
+        <div class="alert-item danger">
+          <strong>4 delivery orders expiring soon</strong>
+          <span>Lệnh giao container gần hết hạn.</span>
+        </div>
+
+        <div class="alert-item info">
+          <strong>Block A01 occupancy 82%</strong>
+          <span>Khu A01 đang gần đầy.</span>
+        </div>
+      </div>
+    </article>
+  </section>
+</div>

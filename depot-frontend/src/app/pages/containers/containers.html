@@ -1,1 +1,193 @@
-<p>containers works!</p>
+<div class="containers-page">
+  <section class="page-header">
+    <div>
+      <p class="page-kicker">Container Management</p>
+      <h1>Containers</h1>
+      <p class="page-description">
+        Quản lý hồ sơ container: số container, loại, hãng khai thác, tình trạng, phân loại và trạng thái hiện tại.
+      </p>
+    </div>
+
+    <button type="button" class="primary-button">Add Container</button>
+  </section>
+
+  <section class="filter-card">
+    <div class="search-box">
+      <span>Search Container</span>
+      <input type="text" value="CMAU" />
+    </div>
+
+    <div class="filter-box">
+      <span>Status</span>
+      <select>
+        <option>All Status</option>
+        <option>In Yard</option>
+        <option>Out Yard</option>
+      </select>
+    </div>
+
+    <div class="filter-box">
+      <span>Line Operator</span>
+      <select>
+        <option>All Lines</option>
+        <option>CMA</option>
+        <option>MSC</option>
+        <option>HMM</option>
+        <option>OOL</option>
+      </select>
+    </div>
+
+    <div class="filter-box">
+      <span>Condition</span>
+      <select>
+        <option>All Conditions</option>
+        <option>Normal</option>
+        <option>Damaged</option>
+        <option>Inspection</option>
+      </select>
+    </div>
+  </section>
+
+  <section class="content-grid">
+    <article class="table-panel">
+      <div class="panel-header">
+        <div>
+          <h2>Container List</h2>
+          <p>Mock data để dựng giao diện trước khi kết nối backend.</p>
+        </div>
+
+        <span class="record-count">248 records</span>
+      </div>
+
+      <table class="data-table">
+        <thead>
+        <tr>
+          <th>Container No.</th>
+          <th>Type</th>
+          <th>ISO</th>
+          <th>Size</th>
+          <th>Line</th>
+          <th>Condition</th>
+          <th>Class</th>
+          <th>Status</th>
+        </tr>
+        </thead>
+
+        <tbody>
+        <tr class="selected-row">
+          <td><strong>CMAU1234564</strong></td>
+          <td>20DC</td>
+          <td>22G1</td>
+          <td>20 ft</td>
+          <td>CMA</td>
+          <td><span class="condition normal">Normal</span></td>
+          <td>A</td>
+          <td><span class="status in-yard">In Yard</span></td>
+        </tr>
+
+        <tr>
+          <td><strong>MSCU7654321</strong></td>
+          <td>40HC</td>
+          <td>45G1</td>
+          <td>40 ft</td>
+          <td>MSC</td>
+          <td><span class="condition damaged">Damaged</span></td>
+          <td>B</td>
+          <td><span class="status in-yard">In Yard</span></td>
+        </tr>
+
+        <tr>
+          <td><strong>HMMU2468102</strong></td>
+          <td>20RF</td>
+          <td>22R1</td>
+          <td>20 ft</td>
+          <td>HMM</td>
+          <td><span class="condition inspection">Inspection</span></td>
+          <td>C</td>
+          <td><span class="status out-yard">Out Yard</span></td>
+        </tr>
+
+        <tr>
+          <td><strong>OOLU1357924</strong></td>
+          <td>40DC</td>
+          <td>42G1</td>
+          <td>40 ft</td>
+          <td>OOL</td>
+          <td><span class="condition normal">Normal</span></td>
+          <td>A</td>
+          <td><span class="status in-yard">In Yard</span></td>
+        </tr>
+        </tbody>
+      </table>
+    </article>
+
+    <aside class="detail-panel">
+      <div class="detail-header">
+        <div>
+          <p>Selected Container</p>
+          <h2>CMAU1234564</h2>
+        </div>
+
+        <span class="status in-yard">In Yard</span>
+      </div>
+
+      <div class="detail-section">
+        <h3>Basic Information</h3>
+
+        <div class="detail-row">
+          <span>Container Type</span>
+          <strong>20DC - Dry Container</strong>
+        </div>
+
+        <div class="detail-row">
+          <span>ISO Code</span>
+          <strong>22G1</strong>
+        </div>
+
+        <div class="detail-row">
+          <span>Line Operator</span>
+          <strong>CMA CGM</strong>
+        </div>
+
+        <div class="detail-row">
+          <span>Owner</span>
+          <strong>CMA CGM Group</strong>
+        </div>
+      </div>
+
+      <div class="detail-section">
+        <h3>Technical Information</h3>
+
+        <div class="detail-row">
+          <span>Maximum Weight</span>
+          <strong>30,480 kg</strong>
+        </div>
+
+        <div class="detail-row">
+          <span>Tare Weight</span>
+          <strong>2,200 kg</strong>
+        </div>
+
+        <div class="detail-row">
+          <span>Date of Manufacture</span>
+          <strong>2021-08-15</strong>
+        </div>
+
+        <div class="detail-row">
+          <span>Classification</span>
+          <strong>A</strong>
+        </div>
+
+        <div class="detail-row">
+          <span>Condition</span>
+          <strong>Normal</strong>
+        </div>
+      </div>
+
+      <div class="detail-actions">
+        <button type="button" class="secondary-button">View History</button>
+        <button type="button" class="primary-button">Edit</button>
+      </div>
+    </aside>
+  </section>
+</div>

@@ -2,9 +2,11 @@ import { Routes } from '@angular/router';
 
 import { Dashboard } from './pages/dashboard/dashboard';
 import { Containers } from './pages/containers/containers';
-import { ImportContainer } from './pages/import-container/import-container';
-import { Statistics } from './pages/statistics/statistics';
+import { YardOperations } from './pages/yard-operations/yard-operations';
+import { YardMap } from './pages/yard-map/yard-map';
+import { DeliveryOrders } from './pages/delivery-orders/delivery-orders';
 import { MasterData } from './pages/master-data/master-data';
+import { Reports } from './pages/reports/reports';
 
 export const routes: Routes = [
   {
@@ -21,25 +23,27 @@ export const routes: Routes = [
     component: Containers,
   },
   {
-    path: 'operations',
-    component: ImportContainer,
+    path: 'yard-operations',
+    component: YardOperations,
   },
   {
-    path: 'import-container',
-    redirectTo: 'operations',
-    pathMatch: 'full',
+    path: 'yard-map',
+    component: YardMap,
   },
   {
-    path: 'export-container',
-    redirectTo: 'operations',
-    pathMatch: 'full',
-  },
-  {
-    path: 'statistics',
-    component: Statistics,
+    path: 'delivery-orders',
+    component: DeliveryOrders,
   },
   {
     path: 'master-data',
     component: MasterData,
+  },
+  {
+    path: 'reports',
+    component: Reports,
+  },
+  {
+    path: '**',
+    redirectTo: 'dashboard',
   },
 ];

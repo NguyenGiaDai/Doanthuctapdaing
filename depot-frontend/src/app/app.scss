@@ -22,25 +22,40 @@
 }
 
 .sidebar {
-  width: 292px;
+  width: 88px;
   background: #0f172a;
   color: #ffffff;
-  padding: 22px 18px;
+  padding: 22px 16px;
   display: flex;
   flex-direction: column;
   border-right: 1px solid rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+  transition:
+    width 0.25s ease,
+    padding 0.25s ease;
+}
+
+.sidebar:hover {
+  width: 292px;
+  padding: 22px 18px;
 }
 
 .brand {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 12px;
-  padding: 4px 6px 24px;
+  padding: 4px 0 24px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
+.sidebar:hover .brand {
+  justify-content: flex-start;
+  padding: 4px 6px 24px;
+}
+
 .brand-logo {
-  width: 66px;
+  width: 48px;
   height: 48px;
   border-radius: 12px;
   background: #ffffff;
@@ -52,10 +67,23 @@
   flex-shrink: 0;
 }
 
+.sidebar:hover .brand-logo {
+  width: 66px;
+  height: 48px;
+}
+
 .brand-logo img {
   width: 100%;
   height: 100%;
   object-fit: contain;
+}
+
+.brand-text {
+  display: none;
+}
+
+.sidebar:hover .brand-text {
+  display: block;
 }
 
 .brand h1 {
@@ -64,32 +92,59 @@
   margin: 0;
   font-weight: 750;
   letter-spacing: -0.02em;
+  white-space: nowrap;
 }
 
 .brand p {
   font-size: 12px;
   color: #94a3b8;
   margin: 4px 0 0;
+  white-space: nowrap;
 }
 
 .nav-menu {
   display: flex;
   flex-direction: column;
+  align-items: center;
   gap: 7px;
   margin-top: 24px;
 }
 
+.sidebar:hover .nav-menu {
+  align-items: stretch;
+}
+
 .nav-item {
+  width: 48px;
+  height: 48px;
   color: #cbd5e1;
   text-decoration: none;
-  padding: 12px 12px;
+  padding: 0;
   border-radius: 12px;
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 12px;
-  transition: 0.18s ease;
   font-size: 14px;
   font-weight: 600;
+  overflow: hidden;
+  transition: 0.18s ease;
+}
+
+.sidebar:hover .nav-item {
+  width: auto;
+  min-height: 48px;
+  justify-content: flex-start;
+  padding: 12px;
+}
+
+.nav-label {
+  display: none;
+  white-space: nowrap;
+}
+
+.sidebar:hover .nav-label {
+  display: inline;
 }
 
 .nav-icon {
@@ -115,10 +170,6 @@
   color: #ffffff;
 }
 
-.nav-item:hover .nav-icon {
-  color: #ffffff;
-}
-
 .nav-item.active {
   background: #ffffff;
   color: #0f172a;
@@ -131,13 +182,18 @@
 }
 
 .sidebar-footer {
+  display: none;
   margin-top: auto;
   padding: 16px;
   border-radius: 16px;
   background: rgba(255, 255, 255, 0.06);
-  display: flex;
   flex-direction: column;
   gap: 4px;
+  white-space: nowrap;
+}
+
+.sidebar:hover .sidebar-footer {
+  display: flex;
 }
 
 .sidebar-footer span {
@@ -221,67 +277,54 @@
   padding: 28px 32px;
 }
 
-/* Old dashboard demo styles, kept temporarily for existing generated pages */
-.welcome-card {
-  background: #ffffff;
-  border: 1px solid #e5e7eb;
-  border-radius: 18px;
-  padding: 28px;
-  box-shadow: 0 14px 34px rgba(15, 23, 42, 0.06);
-}
-
-.welcome-card h3 {
-  margin: 0 0 8px;
-  font-size: 24px;
-  letter-spacing: -0.03em;
-}
-
-.welcome-card > p {
-  margin: 0 0 24px;
-  color: #64748b;
-}
-
-.card-grid {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 16px;
-}
-
-.stat-card {
-  background: #f8fafc;
-  border: 1px solid #e5e7eb;
-  border-radius: 14px;
-  padding: 18px;
-}
-
-.stat-label {
-  color: #64748b;
-  font-size: 13px;
-}
-
-.stat-card strong {
-  display: block;
-  font-size: 32px;
-  margin: 10px 0;
-  letter-spacing: -0.04em;
-}
-
-.stat-card p {
-  margin: 0;
-  color: #64748b;
-  font-size: 13px;
-}
-
 @media (max-width: 900px) {
   .app-shell {
     flex-direction: column;
   }
 
-  .sidebar {
+  .sidebar,
+  .sidebar:hover {
     width: 100%;
+    padding: 18px;
   }
 
-  .card-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+  .brand,
+  .sidebar:hover .brand {
+    justify-content: flex-start;
+  }
+
+  .brand-text,
+  .nav-label,
+  .sidebar-footer {
+    display: block;
+  }
+
+  .nav-menu,
+  .sidebar:hover .nav-menu {
+    align-items: stretch;
+  }
+
+  .nav-item,
+  .sidebar:hover .nav-item {
+    width: auto;
+    min-height: 48px;
+    justify-content: flex-start;
+    padding: 12px;
+  }
+
+  .sidebar-footer,
+  .sidebar:hover .sidebar-footer {
+    display: flex;
+  }
+
+  .topbar {
+    height: auto;
+    padding: 18px;
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .page-content {
+    padding: 20px;
   }
 }
