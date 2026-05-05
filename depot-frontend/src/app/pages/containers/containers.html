@@ -14,7 +14,7 @@
   <section class="filter-card">
     <div class="search-box">
       <span>Search Container</span>
-      <input type="text" value="CMAU" />
+      <input type="text" placeholder="Search by container number..." />
     </div>
 
     <div class="filter-box">
@@ -23,6 +23,7 @@
         <option>All Status</option>
         <option>In Yard</option>
         <option>Out Yard</option>
+        <option>Reserved</option>
       </select>
     </div>
 
@@ -32,8 +33,7 @@
         <option>All Lines</option>
         <option>CMA</option>
         <option>MSC</option>
-        <option>HMM</option>
-        <option>OOL</option>
+        <option>Maersk</option>
       </select>
     </div>
 
@@ -42,21 +42,30 @@
       <select>
         <option>All Conditions</option>
         <option>Normal</option>
+        <option>Good</option>
         <option>Damaged</option>
         <option>Inspection</option>
       </select>
     </div>
   </section>
 
-  <section class="content-grid">
+  <section *ngIf="isLoading" class="state-card">
+    Đang tải danh sách container từ backend...
+  </section>
+
+  <section *ngIf="errorMessage" class="state-card error-card">
+    {{ errorMessage }}
+  </section>
+
+  <section *ngIf="!isLoading && !errorMessage" class="content-grid">
     <article class="table-panel">
       <div class="panel-header">
         <div>
           <h2>Container List</h2>
-          <p>Mock data để dựng giao diện trước khi kết nối backend.</p>
+          <p>Dữ liệu lấy trực tiếp từ backend API.</p>
         </div>
 
-        <span class="record-count">248 records</span>
+        <span class="record-count">{{ totalCount }} records</span>
       </div>
 
       <table class="data-table">
@@ -74,61 +83,48 @@
         </thead>
 
         <tbody>
-        <tr class="selected-row">
-          <td><strong>CMAU1234564</strong></td>
-          <td>20DC</td>
-          <td>22G1</td>
-          <td>20 ft</td>
-          <td>CMA</td>
-          <td><span class="condition normal">Normal</span></td>
-          <td>A</td>
-          <td><span class="status in-yard">In Yard</span></td>
+        <tr
+          *ngFor="let container of containers"
+          [class.selected-row]="selectedContainer?.id === container.id"
+          (click)="selectContainer(container)"
+        >
+          <td><strong>{{ container.containerNumber }}</strong></td>
+          <td>{{ container.containerTypeCode || '-' }}</td>
+          <td>{{ container.isoCode || '-' }}</td>
+          <td>{{ container.containerSize }} ft</td>
+          <td>{{ container.lineOperatorCode || container.lineOperatorName || '-' }}</td>
+          <td>
+              <span class="condition" [ngClass]="getConditionClass(container.containerCondition)">
+                {{ container.containerCondition || '-' }}
+              </span>
+          </td>
+          <td>{{ container.containerClassification || '-' }}</td>
+          <td>
+              <span class="status" [ngClass]="getStatusClass(container.currentStatus)">
+                {{ container.currentStatus || '-' }}
+              </span>
+          </td>
         </tr>
 
-        <tr>
-          <td><strong>MSCU7654321</strong></td>
-          <td>40HC</td>
-          <td>45G1</td>
-          <td>40 ft</td>
-          <td>MSC</td>
-          <td><span class="condition damaged">Damaged</span></td>
-          <td>B</td>
-          <td><span class="status in-yard">In Yard</span></td>
-        </tr>
-
-        <tr>
-          <td><strong>HMMU2468102</strong></td>
-          <td>20RF</td>
-          <td>22R1</td>
-          <td>20 ft</td>
-          <td>HMM</td>
-          <td><span class="condition inspection">Inspection</span></td>
-          <td>C</td>
-          <td><span class="status out-yard">Out Yard</span></td>
-        </tr>
-
-        <tr>
-          <td><strong>OOLU1357924</strong></td>
-          <td>40DC</td>
-          <td>42G1</td>
-          <td>40 ft</td>
-          <td>OOL</td>
-          <td><span class="condition normal">Normal</span></td>
-          <td>A</td>
-          <td><span class="status in-yard">In Yard</span></td>
+        <tr *ngIf="containers.length === 0">
+          <td colspan="8" class="empty-cell">
+            Chưa có container nào trong hệ thống.
+          </td>
         </tr>
         </tbody>
       </table>
     </article>
 
-    <aside class="detail-panel">
+    <aside class="detail-panel" *ngIf="selectedContainer as container; else emptyDetail">
       <div class="detail-header">
         <div>
           <p>Selected Container</p>
-          <h2>CMAU1234564</h2>
+          <h2>{{ container.containerNumber }}</h2>
         </div>
 
-        <span class="status in-yard">In Yard</span>
+        <span class="status" [ngClass]="getStatusClass(container.currentStatus)">
+          {{ container.currentStatus || '-' }}
+        </span>
       </div>
 
       <div class="detail-section">
@@ -136,22 +132,30 @@
 
         <div class="detail-row">
           <span>Container Type</span>
-          <strong>20DC - Dry Container</strong>
+          <strong>
+            {{ container.containerTypeCode || '-' }}
+            -
+            {{ container.containerTypeName || '-' }}
+          </strong>
         </div>
 
         <div class="detail-row">
           <span>ISO Code</span>
-          <strong>22G1</strong>
+          <strong>{{ container.isoCode || '-' }}</strong>
         </div>
 
         <div class="detail-row">
           <span>Line Operator</span>
-          <strong>CMA CGM</strong>
+          <strong>
+            {{ container.lineOperatorCode || '-' }}
+            -
+            {{ container.lineOperatorName || '-' }}
+          </strong>
         </div>
 
         <div class="detail-row">
           <span>Owner</span>
-          <strong>CMA CGM Group</strong>
+          <strong>{{ container.containerOwner || '-' }}</strong>
         </div>
       </div>
 
@@ -160,27 +164,27 @@
 
         <div class="detail-row">
           <span>Maximum Weight</span>
-          <strong>30,480 kg</strong>
+          <strong>{{ formatWeight(container.maximumWeight) }} kg</strong>
         </div>
 
         <div class="detail-row">
           <span>Tare Weight</span>
-          <strong>2,200 kg</strong>
+          <strong>{{ formatWeight(container.tareWeight) }} kg</strong>
         </div>
 
         <div class="detail-row">
           <span>Date of Manufacture</span>
-          <strong>2021-08-15</strong>
+          <strong>{{ formatDate(container.dateOfManufacture) }}</strong>
         </div>
 
         <div class="detail-row">
           <span>Classification</span>
-          <strong>A</strong>
+          <strong>{{ container.containerClassification || '-' }}</strong>
         </div>
 
         <div class="detail-row">
           <span>Condition</span>
-          <strong>Normal</strong>
+          <strong>{{ container.containerCondition || '-' }}</strong>
         </div>
       </div>
 
@@ -189,5 +193,11 @@
         <button type="button" class="primary-button">Edit</button>
       </div>
     </aside>
+
+    <ng-template #emptyDetail>
+      <aside class="detail-panel empty-detail">
+        Chọn một container để xem chi tiết.
+      </aside>
+    </ng-template>
   </section>
 </div>
