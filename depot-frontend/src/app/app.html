@@ -9,32 +9,56 @@
     </div>
 
     <nav class="nav-menu">
-      <a class="nav-item active" href="#">
+      <a
+        class="nav-item"
+        routerLink="/dashboard"
+        routerLinkActive="active"
+      >
         <span>📊</span>
         Dashboard
       </a>
 
-      <a class="nav-item" href="#">
+      <a
+        class="nav-item"
+        routerLink="/containers"
+        routerLinkActive="active"
+      >
         <span>📦</span>
         Containers
       </a>
 
-      <a class="nav-item" href="#">
+      <a
+        class="nav-item"
+        routerLink="/import-container"
+        routerLinkActive="active"
+      >
         <span>⬇️</span>
         Import Container
       </a>
 
-      <a class="nav-item" href="#">
+      <a
+        class="nav-item"
+        routerLink="/export-container"
+        routerLinkActive="active"
+      >
         <span>⬆️</span>
         Export Container
       </a>
 
-      <a class="nav-item" href="#">
+      <a
+        class="nav-item"
+        routerLink="/statistics"
+        routerLinkActive="active"
+      >
         <span>📈</span>
         Statistics
       </a>
 
-      <a class="nav-item" href="#">
+      <a
+        class="nav-item"
+        routerLink="/master-data"
+        routerLinkActive="active"
+      >
         <span>⚙️</span>
         Master Data
       </a>
@@ -55,39 +79,7 @@
     </header>
 
     <section class="page-content">
-      <div class="welcome-card">
-        <h3>Dashboard</h3>
-        <p>
-          Đây là giao diện frontend Angular ban đầu cho hệ thống quản lý depot.
-          Các màn hình tiếp theo sẽ lần lượt gọi API backend thật.
-        </p>
-
-        <div class="card-grid">
-          <div class="stat-card">
-            <span class="stat-label">Containers</span>
-            <strong>0</strong>
-            <p>Danh sách container</p>
-          </div>
-
-          <div class="stat-card">
-            <span class="stat-label">Import</span>
-            <strong>0</strong>
-            <p>Container nhập bãi</p>
-          </div>
-
-          <div class="stat-card">
-            <span class="stat-label">Export</span>
-            <strong>0</strong>
-            <p>Container xuất bãi</p>
-          </div>
-
-          <div class="stat-card">
-            <span class="stat-label">Statistics</span>
-            <strong>0</strong>
-            <p>Báo cáo sản lượng</p>
-          </div>
-        </div>
-      </div>
+      <router-outlet></router-outlet>
     </section>
   </main>
 </div>
