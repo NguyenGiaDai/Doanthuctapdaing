@@ -1,79 +1,84 @@
 <div class="app-shell">
   <aside class="sidebar">
     <div class="brand">
-      <div class="brand-logo">D</div>
+      <div class="brand-logo">
+        <img
+          src="https://upload.wikimedia.org/wikipedia/vi/6/69/Logo_SNP.jpg"
+          alt="Saigon Newport Corporation Logo"
+        />
+      </div>
+
       <div>
         <h1>Depot System</h1>
-        <p>Container Management</p>
+        <p>Container Operations</p>
       </div>
     </div>
 
     <nav class="nav-menu">
-      <a
-        class="nav-item"
-        routerLink="/dashboard"
-        routerLinkActive="active"
-      >
-        <span>📊</span>
-        Dashboard
+      <a class="nav-item" routerLink="/dashboard" routerLinkActive="active">
+        <span class="nav-icon">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M4 13h6V4H4v9Zm0 7h6v-5H4v5Zm10 0h6v-9h-6v9Zm0-16v5h6V4h-6Z" />
+          </svg>
+        </span>
+        <span>Dashboard</span>
       </a>
 
-      <a
-        class="nav-item"
-        routerLink="/containers"
-        routerLinkActive="active"
-      >
-        <span>📦</span>
-        Containers
+      <a class="nav-item" routerLink="/containers" routerLinkActive="active">
+        <span class="nav-icon">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M3 7.5 12 3l9 4.5v9L12 21l-9-4.5v-9Zm2 1.2v6.6l6 3v-6.6l-6-3Zm14 0-6 3v6.6l6-3V8.7Zm-7-3.45L6.2 8 12 10.75 17.8 8 12 5.25Z" />
+          </svg>
+        </span>
+        <span>Containers</span>
       </a>
 
-      <a
-        class="nav-item"
-        routerLink="/import-container"
-        routerLinkActive="active"
-      >
-        <span>⬇️</span>
-        Import Container
+      <a class="nav-item" routerLink="/operations" routerLinkActive="active">
+        <span class="nav-icon">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M7 7h10l-2.2-2.2L16.2 3.4 21 8.2 16.2 13l-1.4-1.4L17.4 9H7V7Zm10 10H7l2.2 2.2-1.4 1.4L3 15.8 7.8 11l1.4 1.4L6.6 15H17v2Z" />
+          </svg>
+        </span>
+        <span>Operations</span>
       </a>
 
-      <a
-        class="nav-item"
-        routerLink="/export-container"
-        routerLinkActive="active"
-      >
-        <span>⬆️</span>
-        Export Container
+      <a class="nav-item" routerLink="/statistics" routerLinkActive="active">
+        <span class="nav-icon">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M5 19h14v2H3V3h2v16Zm2-2V9h3v8H7Zm5 0V5h3v12h-3Zm5 0v-6h3v6h-3Z" />
+          </svg>
+        </span>
+        <span>Statistics</span>
       </a>
 
-      <a
-        class="nav-item"
-        routerLink="/statistics"
-        routerLinkActive="active"
-      >
-        <span>📈</span>
-        Statistics
-      </a>
-
-      <a
-        class="nav-item"
-        routerLink="/master-data"
-        routerLinkActive="active"
-      >
-        <span>⚙️</span>
-        Master Data
+      <a class="nav-item" routerLink="/master-data" routerLinkActive="active">
+        <span class="nav-icon">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 8a4 4 0 1 1 0 8 4 4 0 0 1 0-8Zm8.7 4a7.9 7.9 0 0 0-.1-1.1l2-1.5-2-3.5-2.4 1a8.4 8.4 0 0 0-1.9-1.1L16 3h-4l-.4 2.8a8.4 8.4 0 0 0-1.9 1.1l-2.4-1-2 3.5 2 1.5A7.9 7.9 0 0 0 7.3 12c0 .4 0 .8.1 1.1l-2 1.5 2 3.5 2.4-1a8.4 8.4 0 0 0 1.9 1.1L12 21h4l.4-2.8a8.4 8.4 0 0 0 1.9-1.1l2.4 1 2-3.5-2-1.5c.1-.3.1-.7.1-1.1Z" />
+          </svg>
+        </span>
+        <span>Master Data</span>
       </a>
     </nav>
+
+    <div class="sidebar-footer">
+      <span>Internship Project</span>
+      <strong>Depot Management</strong>
+    </div>
   </aside>
 
   <main class="main-content">
     <header class="topbar">
       <div>
+        <p class="eyebrow">Saigon Newport Corporation</p>
         <h2>Depot Container Management</h2>
-        <p>Quản lý container, nhập/xuất bãi và thống kê depot</p>
       </div>
 
       <div class="user-box">
-        <span>Intern Demo</span>
+        <div>
+          <span>Intern Demo</span>
+          <p>Operator View</p>
+        </div>
         <div class="avatar">JD</div>
       </div>
     </header>
