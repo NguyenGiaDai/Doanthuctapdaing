@@ -8,7 +8,9 @@
       </p>
     </div>
 
-    <button type="button" class="primary-button">Thêm container</button>
+    <button type="button" class="primary-button" (click)="openAddContainerModal()">
+      Thêm container
+    </button>
   </section>
 
   <section class="filter-card">
@@ -63,6 +65,154 @@
     </div>
   </section>
 
+  <section *ngIf="isAddContainerModalOpen" class="modal-backdrop">
+    <form class="container-form-card" (ngSubmit)="submitAddContainer()">
+      <div class="form-header">
+        <div>
+          <p>CONTAINER MỚI</p>
+          <h2>Thêm container</h2>
+        </div>
+
+        <button type="button" class="icon-button" (click)="closeAddContainerModal()">
+          ×
+        </button>
+      </div>
+
+      <div *ngIf="isDropdownLoading" class="form-message">
+        Đang tải loại container và hãng khai thác...
+      </div>
+
+      <div *ngIf="dropdownErrorMessage" class="form-message error-card">
+        {{ dropdownErrorMessage }}
+      </div>
+
+      <div *ngIf="addContainerErrorMessage" class="form-message error-card">
+        {{ addContainerErrorMessage }}
+      </div>
+
+      <div class="form-grid">
+        <label>
+          <span>Số container</span>
+          <input
+            type="text"
+            name="containerNumber"
+            placeholder="Ví dụ: CMAU1234564"
+            [(ngModel)]="addContainerForm.containerNumber"
+            [disabled]="isSubmittingAddContainer"
+          />
+        </label>
+
+        <label>
+          <span>Loại container</span>
+          <select
+            name="containerTypeId"
+            [(ngModel)]="addContainerForm.containerTypeId"
+            [disabled]="isSubmittingAddContainer"
+          >
+            <option [ngValue]="null">Chọn loại container</option>
+            <option *ngFor="let type of containerTypes" [ngValue]="type.id">
+              {{ type.containerTypeCode }} - {{ type.containerTypeName }} - {{ type.containerSize }} ft
+            </option>
+          </select>
+        </label>
+
+        <label>
+          <span>Hãng khai thác</span>
+          <select
+            name="lineOperatorId"
+            [(ngModel)]="addContainerForm.lineOperatorId"
+            [disabled]="isSubmittingAddContainer"
+          >
+            <option [ngValue]="null">Chọn hãng khai thác</option>
+            <option *ngFor="let line of lineOperators" [ngValue]="line.id">
+              {{ line.lineOperatorCode }} - {{ line.lineOperatorName }}
+            </option>
+          </select>
+        </label>
+
+        <label>
+          <span>Ngày sản xuất</span>
+          <input
+            type="date"
+            name="dateOfManufacture"
+            [(ngModel)]="addContainerForm.dateOfManufacture"
+            [disabled]="isSubmittingAddContainer"
+          />
+        </label>
+
+        <label>
+          <span>Chủ sở hữu</span>
+          <input
+            type="text"
+            name="containerOwner"
+            placeholder="Ví dụ: SNP"
+            [(ngModel)]="addContainerForm.containerOwner"
+            [disabled]="isSubmittingAddContainer"
+          />
+        </label>
+
+        <label>
+          <span>Tình trạng</span>
+          <select
+            name="containerCondition"
+            [(ngModel)]="addContainerForm.containerCondition"
+            [disabled]="isSubmittingAddContainer"
+          >
+            <option value="Normal">Normal</option>
+            <option value="Good">Good</option>
+            <option value="Damaged">Damaged</option>
+            <option value="Inspection">Inspection</option>
+          </select>
+        </label>
+
+        <label>
+          <span>Phân loại</span>
+          <select
+            name="containerClassification"
+            [(ngModel)]="addContainerForm.containerClassification"
+            [disabled]="isSubmittingAddContainer"
+          >
+            <option value="A">A</option>
+            <option value="B">B</option>
+            <option value="C">C</option>
+          </select>
+        </label>
+
+        <label>
+          <span>Trạng thái ban đầu</span>
+          <select
+            name="currentStatus"
+            [(ngModel)]="addContainerForm.currentStatus"
+            [disabled]="isSubmittingAddContainer"
+          >
+            <option value="OutYard">OutYard</option>
+            <option value="Reserved">Reserved</option>
+            <option value="InYard">InYard</option>
+          </select>
+        </label>
+      </div>
+
+      <div class="form-actions">
+        <button
+          type="button"
+          class="secondary-button"
+          (click)="closeAddContainerModal()"
+          [disabled]="isSubmittingAddContainer"
+        >
+          Hủy
+        </button>
+
+        <button
+          type="submit"
+          class="primary-button"
+          [disabled]="isSubmittingAddContainer || isDropdownLoading"
+        >
+          {{ isSubmittingAddContainer ? 'Đang lưu...' : 'Lưu container' }}
+        </button>
+      </div>
+    </form>
+  </section>
+
   <section *ngIf="isLoading" class="state-card">
     Đang tải danh sách container từ backend...
   </section>
@@ -108,15 +258,15 @@
           <td>{{ container.containerSize }} ft</td>
           <td>{{ container.lineOperatorCode || container.lineOperatorName || '-' }}</td>
           <td>
-              <span class="condition" [ngClass]="getConditionClass(container.containerCondition)">
-                {{ container.containerCondition || '-' }}
-              </span>
+            <span class="condition" [ngClass]="getConditionClass(container.containerCondition)">
+              {{ container.containerCondition || '-' }}
+            </span>
           </td>
           <td>{{ container.containerClassification || '-' }}</td>
           <td>
-              <span class="status" [ngClass]="getStatusClass(container.currentStatus)">
-                {{ container.currentStatus || '-' }}
-              </span>
+            <span class="status" [ngClass]="getStatusClass(container.currentStatus)">
+              {{ container.currentStatus || '-' }}
+            </span>
           </td>
         </tr>
 

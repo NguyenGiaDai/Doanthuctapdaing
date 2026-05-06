@@ -1,9 +1,15 @@
 import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { forkJoin } from 'rxjs';
 
-import { ContainerResponse } from '../../models/container.model';
+import { ContainerResponse, CreateContainerRequest } from '../../models/container.model';
+import { ContainerTypeResponse } from '../../models/container-type.model';
+import { LineOperatorResponse } from '../../models/line-operator.model';
+
 import { ContainerService } from '../../services/container.service';
+import { ContainerTypeService } from '../../services/container-type.service';
+import { LineOperatorService } from '../../services/line-operator.service';
 
 @Component({
   selector: 'app-containers',
@@ -32,13 +38,37 @@ export class Containers implements OnInit {
   lineOperatorOptions: string[] = ['All Lines'];
   conditionOptions: string[] = ['All Conditions'];
 
+  containerTypes: ContainerTypeResponse[] = [];
+  lineOperators: LineOperatorResponse[] = [];
+
+  isDropdownLoading = false;
+  dropdownErrorMessage = '';
+
+  isAddContainerModalOpen = false;
+  isSubmittingAddContainer = false;
+  addContainerErrorMessage = '';
+
+  addContainerForm = {
+    containerNumber: '',
+    containerTypeId: null as number | null,
+    lineOperatorId: null as number | null,
+    dateOfManufacture: '',
+    containerOwner: '',
+    containerCondition: 'Normal',
+    containerClassification: 'A',
+    currentStatus: 'OutYard',
+  };
+
   constructor(
     private readonly containerService: ContainerService,
+    private readonly containerTypeService: ContainerTypeService,
+    private readonly lineOperatorService: LineOperatorService,
     private readonly changeDetectorRef: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
     this.loadContainers();
+    this.loadAddContainerDropdowns();
   }
 
   loadContainers(): void {
@@ -74,18 +104,224 @@ export class Containers implements OnInit {
     });
   }
 
+  loadAddContainerDropdowns(): void {
+    this.isDropdownLoading = true;
+    this.dropdownErrorMessage = '';
+    this.changeDetectorRef.detectChanges();
+
+    forkJoin({
+      containerTypes: this.containerTypeService.getContainerTypes(),
+      lineOperators: this.lineOperatorService.getLineOperators(),
+    }).subscribe({
+      next: (response) => {
+        console.log('Container type dropdown response:', response.containerTypes);
+        console.log('Line operator dropdown response:', response.lineOperators);
+
+        this.containerTypes = response.containerTypes.items ?? [];
+        this.lineOperators = response.lineOperators.items ?? [];
+
+        this.isDropdownLoading = false;
+        this.changeDetectorRef.detectChanges();
+      },
+      error: (error) => {
+        console.error('Load add container dropdowns failed:', error);
+
+        this.dropdownErrorMessage =
+          'Không tải được dữ liệu loại container hoặc hãng khai thác.';
+
+        this.isDropdownLoading = false;
+        this.changeDetectorRef.detectChanges();
+      },
+    });
+  }
+
+  openAddContainerModal(): void {
+    this.addContainerErrorMessage = '';
+    this.isAddContainerModalOpen = true;
+
+    if (this.containerTypes.length === 0 || this.lineOperators.length === 0) {
+      this.loadAddContainerDropdowns();
+    }
+  }
+
+  closeAddContainerModal(): void {
+    if (this.isSubmittingAddContainer) {
+      return;
+    }
+
+    this.isAddContainerModalOpen = false;
+    this.addContainerErrorMessage = '';
+  }
+
+  submitAddContainer(): void {
+    this.addContainerErrorMessage = '';
+
+    const validationMessage = this.validateAddContainerForm();
+
+    if (validationMessage) {
+      this.addContainerErrorMessage = validationMessage;
+      this.changeDetectorRef.detectChanges();
+      return;
+    }
+
+    const request: CreateContainerRequest = {
+      containerNumber: this.addContainerForm.containerNumber.trim().toUpperCase(),
+      containerTypeId: this.addContainerForm.containerTypeId as number,
+      lineOperatorId: this.addContainerForm.lineOperatorId as number,
+      dateOfManufacture: this.addContainerForm.dateOfManufacture || null,
+      containerOwner: this.addContainerForm.containerOwner.trim(),
+      containerCondition: this.addContainerForm.containerCondition,
+      containerClassification: this.addContainerForm.containerClassification || null,
+      currentStatus: this.addContainerForm.currentStatus || null,
+    };
+
+    this.isSubmittingAddContainer = true;
+    this.changeDetectorRef.detectChanges();
+
+    this.containerService.createContainer(request).subscribe({
+      next: (createdContainer) => {
+        console.log('Create container response:', createdContainer);
+
+        this.isSubmittingAddContainer = false;
+        this.isAddContainerModalOpen = false;
+        this.resetAddContainerForm();
+
+        this.loadContainers();
+        this.changeDetectorRef.detectChanges();
+      },
+      error: (error) => {
+        console.error('Create container failed:', error);
+
+        this.addContainerErrorMessage = this.getApiErrorMessage(
+          error,
+          'Không thêm được container. Hãy kiểm tra dữ liệu nhập hoặc backend.'
+        );
+
+        this.isSubmittingAddContainer = false;
+        this.changeDetectorRef.detectChanges();
+      },
+    });
+  }
+
+  validateAddContainerForm(): string {
+    if (!this.addContainerForm.containerNumber.trim()) {
+      return 'Vui lòng nhập số container.';
+    }
+
+    if (!this.addContainerForm.containerTypeId) {
+      return 'Vui lòng chọn loại container.';
+    }
+
+    if (!this.addContainerForm.lineOperatorId) {
+      return 'Vui lòng chọn hãng khai thác.';
+    }
+
+    if (!this.addContainerForm.containerOwner.trim()) {
+      return 'Vui lòng nhập chủ sở hữu container.';
+    }
+
+    if (!this.addContainerForm.containerCondition.trim()) {
+      return 'Vui lòng chọn tình trạng container.';
+    }
+
+    return '';
+  }
+
+  resetAddContainerForm(): void {
+    this.addContainerForm = {
+      containerNumber: '',
+      containerTypeId: null,
+      lineOperatorId: null,
+      dateOfManufacture: '',
+      containerOwner: '',
+      containerCondition: 'Normal',
+      containerClassification: 'A',
+      currentStatus: 'OutYard',
+    };
+
+    this.addContainerErrorMessage = '';
+  }
+
+  getApiErrorMessage(error: any, fallbackMessage: string): string {
+    const responseBody = error?.error;
+
+    if (typeof responseBody === 'string') {
+      return responseBody;
+    }
+
+    if (responseBody?.Message) {
+      return responseBody.Message;
+    }
+
+    if (responseBody?.message) {
+      return responseBody.message;
+    }
+
+    if (responseBody?.Title) {
+      return responseBody.Title;
+    }
+
+    if (responseBody?.title) {
+      return responseBody.title;
+    }
+
+    if (responseBody?.Errors) {
+      if (Array.isArray(responseBody.Errors)) {
+        return responseBody.Errors
+          .map((item: any) => item?.Message || item?.message || item)
+          .filter((message: string) => !!message)
+          .join(' ');
+      }
+
+      const firstKey = Object.keys(responseBody.Errors)[0];
+
+      if (firstKey) {
+        const firstError = responseBody.Errors[firstKey];
+
+        if (Array.isArray(firstError)) {
+          return firstError.join(' ');
+        }
+
+        return String(firstError);
+      }
+    }
+
+    if (responseBody?.errors) {
+      if (Array.isArray(responseBody.errors)) {
+        return responseBody.errors
+          .map((item: any) => item?.Message || item?.message || item)
+          .filter((message: string) => !!message)
+          .join(' ');
+      }
+
+      const firstKey = Object.keys(responseBody.errors)[0];
+
+      if (firstKey) {
+        const firstError = responseBody.errors[firstKey];
+
+        if (Array.isArray(firstError)) {
+          return firstError.join(' ');
+        }
+
+        return String(firstError);
+      }
+    }
+
+    return fallbackMessage;
+  }
+
   buildFilterOptions(): void {
     const statuses = this.allContainers
       .map((container) => container.currentStatus)
-      .filter((status) => !!status);
+      .filter((status): status is string => !!status);
 
     const lineOperators = this.allContainers
       .map((container) => container.lineOperatorCode || container.lineOperatorName)
-      .filter((line) => !!line);
+      .filter((line): line is string => !!line);
 
     const conditions = this.allContainers
       .map((container) => container.containerCondition)
-      .filter((condition) => !!condition);
+      .filter((condition): condition is string => !!condition);
 
     this.statusOptions = ['All Status', ...new Set(statuses)];
     this.lineOperatorOptions = ['All Lines', ...new Set(lineOperators)];
@@ -177,7 +413,7 @@ export class Containers implements OnInit {
     return `${year}-${month}-${day}`;
   }
 
-  getStatusClass(status: string): string {
+  getStatusClass(status: string | null): string {
     const normalizedStatus = status?.toLowerCase();
 
     if (normalizedStatus === 'inyard') {
@@ -195,7 +431,7 @@ export class Containers implements OnInit {
     return '';
   }
 
-  getConditionClass(condition: string): string {
+  getConditionClass(condition: string | null): string {
     const normalizedCondition = condition?.toLowerCase();
 
     if (normalizedCondition === 'normal' || normalizedCondition === 'good') {

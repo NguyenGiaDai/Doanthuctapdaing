@@ -2,7 +2,11 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
-import { ContainerResponse, PaginationResponse } from '../models/container.model';
+import {
+  ContainerResponse,
+  CreateContainerRequest,
+  PaginationResponse,
+} from '../models/container.model';
 
 @Injectable({
   providedIn: 'root',
@@ -10,11 +14,15 @@ import { ContainerResponse, PaginationResponse } from '../models/container.model
 export class ContainerService {
   private readonly apiUrl = '/api/Container';
 
-  constructor(private http: HttpClient) {}
+  constructor(private readonly http: HttpClient) {}
 
   getContainers(pageIndex = 0, pageSize = 10): Observable<PaginationResponse<ContainerResponse>> {
     return this.http.get<PaginationResponse<ContainerResponse>>(
       `${this.apiUrl}?pageIndex=${pageIndex}&pageSize=${pageSize}`
     );
+  }
+
+  createContainer(request: CreateContainerRequest): Observable<ContainerResponse> {
+    return this.http.post<ContainerResponse>(this.apiUrl, request);
   }
 }
