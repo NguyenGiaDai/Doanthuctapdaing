@@ -1,51 +1,65 @@
 <div class="containers-page">
   <section class="page-header">
     <div>
-      <p class="page-kicker">Container Management</p>
-      <h1>Containers</h1>
+      <p class="page-kicker">QUẢN LÝ CONTAINER</p>
+      <h1>Danh sách container</h1>
       <p class="page-description">
         Quản lý hồ sơ container: số container, loại, hãng khai thác, tình trạng, phân loại và trạng thái hiện tại.
       </p>
     </div>
 
-    <button type="button" class="primary-button">Add Container</button>
+    <button type="button" class="primary-button">Thêm container</button>
   </section>
 
   <section class="filter-card">
-    <div class="search-box">
-      <span>Search Container</span>
-      <input type="text" placeholder="Search by container number..." />
+    <div class="filter-card-header">
+      <div>
+        <h2>Bộ lọc container</h2>
+        <p>Tra cứu và lọc danh sách container.</p>
+      </div>
+
+      <button type="button" class="clear-filter-button" (click)="clearFilters()">
+        Đặt lại
+      </button>
     </div>
 
-    <div class="filter-box">
-      <span>Status</span>
-      <select>
-        <option>All Status</option>
-        <option>In Yard</option>
-        <option>Out Yard</option>
-        <option>Reserved</option>
-      </select>
-    </div>
+    <div class="filter-grid">
+      <div class="search-box">
+        <span>Tìm kiếm container</span>
+        <input
+          type="text"
+          placeholder="Nhập số container, loại, ISO, hãng khai thác..."
+          [(ngModel)]="searchKeyword"
+          (input)="applyFilters()"
+        />
+      </div>
 
-    <div class="filter-box">
-      <span>Line Operator</span>
-      <select>
-        <option>All Lines</option>
-        <option>CMA</option>
-        <option>MSC</option>
-        <option>Maersk</option>
-      </select>
-    </div>
+      <div class="filter-box">
+        <span>Trạng thái</span>
+        <select [(ngModel)]="selectedStatus" (change)="applyFilters()">
+          <option *ngFor="let status of statusOptions" [value]="status">
+            {{ status }}
+          </option>
+        </select>
+      </div>
 
-    <div class="filter-box">
-      <span>Condition</span>
-      <select>
-        <option>All Conditions</option>
-        <option>Normal</option>
-        <option>Good</option>
-        <option>Damaged</option>
-        <option>Inspection</option>
-      </select>
+      <div class="filter-box">
+        <span>Hãng khai thác</span>
+        <select [(ngModel)]="selectedLineOperator" (change)="applyFilters()">
+          <option *ngFor="let line of lineOperatorOptions" [value]="line">
+            {{ line }}
+          </option>
+        </select>
+      </div>
+
+      <div class="filter-box">
+        <span>Tình trạng</span>
+        <select [(ngModel)]="selectedCondition" (change)="applyFilters()">
+          <option *ngFor="let condition of conditionOptions" [value]="condition">
+            {{ condition }}
+          </option>
+        </select>
+      </div>
     </div>
   </section>
 
@@ -61,24 +75,24 @@
     <article class="table-panel">
       <div class="panel-header">
         <div>
-          <h2>Container List</h2>
-          <p>Dữ liệu lấy trực tiếp từ backend API.</p>
+          <h2>Danh sách container</h2>
+          <p>Theo dõi thông tin container và trạng thái hiện tại trong depot.</p>
         </div>
 
-        <span class="record-count">{{ totalCount }} records</span>
+        <span class="record-count">{{ totalCount }} bản ghi</span>
       </div>
 
       <table class="data-table">
         <thead>
         <tr>
-          <th>Container No.</th>
-          <th>Type</th>
-          <th>ISO</th>
-          <th>Size</th>
-          <th>Line</th>
-          <th>Condition</th>
-          <th>Class</th>
-          <th>Status</th>
+          <th>Số container</th>
+          <th>Loại</th>
+          <th>Mã ISO</th>
+          <th>Kích thước</th>
+          <th>Hãng</th>
+          <th>Tình trạng</th>
+          <th>Phân loại</th>
+          <th>Trạng thái</th>
         </tr>
         </thead>
 
@@ -108,7 +122,7 @@
 
         <tr *ngIf="containers.length === 0">
           <td colspan="8" class="empty-cell">
-            Chưa có container nào trong hệ thống.
+            Không tìm thấy container phù hợp với bộ lọc hiện tại.
           </td>
         </tr>
         </tbody>
@@ -118,7 +132,7 @@
     <aside class="detail-panel" *ngIf="selectedContainer as container; else emptyDetail">
       <div class="detail-header">
         <div>
-          <p>Selected Container</p>
+          <p>Container đang chọn</p>
           <h2>{{ container.containerNumber }}</h2>
         </div>
 
@@ -128,10 +142,10 @@
       </div>
 
       <div class="detail-section">
-        <h3>Basic Information</h3>
+        <h3>Thông tin cơ bản</h3>
 
         <div class="detail-row">
-          <span>Container Type</span>
+          <span>Loại container</span>
           <strong>
             {{ container.containerTypeCode || '-' }}
             -
@@ -140,12 +154,12 @@
         </div>
 
         <div class="detail-row">
-          <span>ISO Code</span>
+          <span>Mã ISO</span>
           <strong>{{ container.isoCode || '-' }}</strong>
         </div>
 
         <div class="detail-row">
-          <span>Line Operator</span>
+          <span>Hãng khai thác</span>
           <strong>
             {{ container.lineOperatorCode || '-' }}
             -
@@ -154,49 +168,49 @@
         </div>
 
         <div class="detail-row">
-          <span>Owner</span>
+          <span>Chủ sở hữu</span>
           <strong>{{ container.containerOwner || '-' }}</strong>
         </div>
       </div>
 
       <div class="detail-section">
-        <h3>Technical Information</h3>
+        <h3>Thông tin kỹ thuật</h3>
 
         <div class="detail-row">
-          <span>Maximum Weight</span>
+          <span>Trọng lượng tối đa</span>
           <strong>{{ formatWeight(container.maximumWeight) }} kg</strong>
         </div>
 
         <div class="detail-row">
-          <span>Tare Weight</span>
+          <span>Trọng lượng vỏ</span>
           <strong>{{ formatWeight(container.tareWeight) }} kg</strong>
         </div>
 
         <div class="detail-row">
-          <span>Date of Manufacture</span>
+          <span>Ngày sản xuất</span>
           <strong>{{ formatDate(container.dateOfManufacture) }}</strong>
         </div>
 
         <div class="detail-row">
-          <span>Classification</span>
+          <span>Phân loại</span>
           <strong>{{ container.containerClassification || '-' }}</strong>
         </div>
 
         <div class="detail-row">
-          <span>Condition</span>
+          <span>Tình trạng</span>
           <strong>{{ container.containerCondition || '-' }}</strong>
         </div>
       </div>
 
       <div class="detail-actions">
-        <button type="button" class="secondary-button">View History</button>
-        <button type="button" class="primary-button">Edit</button>
+        <button type="button" class="secondary-button">Xem lịch sử</button>
+        <button type="button" class="primary-button">Chỉnh sửa</button>
       </div>
     </aside>
 
     <ng-template #emptyDetail>
       <aside class="detail-panel empty-detail">
-        Chọn một container để xem chi tiết.
+        Không có container nào được chọn.
       </aside>
     </ng-template>
   </section>
