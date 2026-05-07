@@ -4,15 +4,8 @@
       <p class="page-kicker">YARD OPERATIONS</p>
       <h1>Vận hành nhập / xuất container</h1>
       <p class="page-description">
-        Quản lý các nghiệp vụ vận hành bãi: nhập container vào bãi, xuất container theo lệnh giao,
-        di dời vị trí và theo dõi lịch sử giao dịch.
+        Thực hiện các nghiệp vụ nhập bãi, xuất bãi, di dời container và theo dõi lịch sử giao dịch trong depot.
       </p>
-    </div>
-
-    <div class="summary-card">
-      <span>Trạng thái</span>
-      <strong>UI nghiệp vụ</strong>
-      <p>Bước này dựng giao diện, bước sau nối API thật.</p>
     </div>
   </section>
 
@@ -66,24 +59,47 @@
       </div>
 
       <form class="operation-form" (ngSubmit)="submitImport()">
+        <div *ngIf="isLoadingContainers" class="alert-message info">
+          Đang tải danh sách container...
+        </div>
+
+        <div *ngIf="importSuccessMessage" class="alert-message success">
+          {{ importSuccessMessage }}
+        </div>
+
+        <div *ngIf="importErrorMessage" class="alert-message error">
+          {{ importErrorMessage }}
+        </div>
+
         <div class="form-grid">
           <label>
-            <span>Số container</span>
-            <input
-              type="text"
-              name="importContainerNumber"
-              placeholder="Ví dụ: CMAU1234564"
-              [(ngModel)]="importForm.containerNumber"
-            />
+            <span>Container cần nhập bãi</span>
+            <select
+              name="importContainerId"
+              [(ngModel)]="importForm.containerId"
+              [disabled]="isImportSubmitting || isLoadingContainers"
+            >
+              <option [ngValue]="null">Chọn container</option>
+              <option *ngFor="let container of containers" [ngValue]="container.id">
+                {{ container.containerNumber }}
+                -
+                {{ container.containerTypeCode || 'N/A' }}
+                -
+                {{ container.lineOperatorCode || container.lineOperatorName || 'N/A' }}
+                -
+                {{ container.currentStatus || 'N/A' }}
+              </option>
+            </select>
           </label>
 
           <label>
-            <span>Block nhận container</span>
+            <span>Block đích</span>
             <input
-              type="text"
-              name="importToBlock"
-              placeholder="Ví dụ: A01"
-              [(ngModel)]="importForm.toBlock"
+              type="number"
+              name="importToBlockId"
+              placeholder="Ví dụ: 1"
+              [(ngModel)]="importForm.toBlockId"
+              [disabled]="isImportSubmitting"
             />
           </label>
 
@@ -94,6 +110,7 @@
               name="importToBay"
               placeholder="1"
               [(ngModel)]="importForm.toBay"
+              [disabled]="isImportSubmitting"
             />
           </label>
 
@@ -104,6 +121,7 @@
               name="importToRow"
               placeholder="1"
               [(ngModel)]="importForm.toRow"
+              [disabled]="isImportSubmitting"
             />
           </label>
 
@@ -114,6 +132,7 @@
               name="importToTier"
               placeholder="1"
               [(ngModel)]="importForm.toTier"
+              [disabled]="isImportSubmitting"
             />
           </label>
 
@@ -124,6 +143,7 @@
               name="importVehicleNumber"
               placeholder="Ví dụ: 51C-12345"
               [(ngModel)]="importForm.vehicleNumber"
+              [disabled]="isImportSubmitting"
             />
           </label>
 
@@ -133,6 +153,7 @@
               type="datetime-local"
               name="importTransactionTime"
               [(ngModel)]="importForm.transactionTime"
+              [disabled]="isImportSubmitting"
             />
           </label>
 
@@ -143,19 +164,18 @@
               rows="4"
               placeholder="Nhập ghi chú nếu có..."
               [(ngModel)]="importForm.note"
+              [disabled]="isImportSubmitting"
             ></textarea>
           </label>
         </div>
 
-        <div class="business-note">
-          <strong>Luồng nghiệp vụ:</strong>
-          kiểm tra container, kiểm tra vị trí trống, tạo giao dịch In, ghi nhận ContainerPosition,
-          cập nhật trạng thái container thành InYard.
-        </div>
-
         <div class="form-actions">
-          <button type="submit" class="primary-button">
-            Xác nhận nhập bãi
+          <button
+            type="submit"
+            class="primary-button"
+            [disabled]="isImportSubmitting || isLoadingContainers"
+          >
+            {{ isImportSubmitting ? 'Đang nhập bãi...' : 'Xác nhận nhập bãi' }}
           </button>
         </div>
       </form>
@@ -221,12 +241,6 @@
               [(ngModel)]="exportForm.note"
             ></textarea>
           </label>
-        </div>
-
-        <div class="business-note warning">
-          <strong>Luồng nghiệp vụ:</strong>
-          xuất container phải có Delivery Order hợp lệ, còn hạn, đúng hãng khai thác,
-          đúng loại container và container phải đang ở trong bãi.
         </div>
 
         <div class="form-actions">
@@ -366,12 +380,6 @@
           </label>
         </div>
 
-        <div class="business-note">
-          <strong>Luồng nghiệp vụ:</strong>
-          di dời container tận dụng cập nhật ContainerPosition hiện tại.
-          Khi nối API thật cần kiểm tra vị trí mới không bị trùng.
-        </div>
-
         <div class="form-actions">
           <button type="submit" class="primary-button">
             Xác nhận di dời
@@ -412,9 +420,9 @@
             </td>
             <td>{{ item.containerNumber }}</td>
             <td>
-              <span class="transaction-badge" [ngClass]="getTransactionClass(item.transactionType)">
-                {{ item.transactionType }}
-              </span>
+                <span class="transaction-badge" [ngClass]="getTransactionClass(item.transactionType)">
+                  {{ item.transactionType }}
+                </span>
             </td>
             <td>{{ item.fromPosition }}</td>
             <td>{{ item.toPosition }}</td>

@@ -1,6 +1,12 @@
 import { CommonModule } from '@angular/common';
-import { Component } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+
+import { ContainerResponse } from '../../models/container.model';
+import { ImportContainerRequest } from '../../models/container-transaction.model';
+
+import { ContainerService } from '../../services/container.service';
+import { ContainerTransactionService } from '../../services/container-transaction.service';
 
 type YardOperationTab = 'import' | 'export' | 'move' | 'history';
 
@@ -21,12 +27,19 @@ interface YardOperationHistoryItem {
   templateUrl: './yard-operations.html',
   styleUrl: './yard-operations.scss',
 })
-export class YardOperations {
+export class YardOperations implements OnInit {
   activeTab: YardOperationTab = 'import';
 
+  containers: ContainerResponse[] = [];
+  isLoadingContainers = false;
+
+  isImportSubmitting = false;
+  importSuccessMessage = '';
+  importErrorMessage = '';
+
   importForm = {
-    containerNumber: '',
-    toBlock: '',
+    containerId: null as number | null,
+    toBlockId: null as number | null,
     toBay: null as number | null,
     toRow: null as number | null,
     toTier: null as number | null,
@@ -91,12 +104,150 @@ export class YardOperations {
     },
   ];
 
+  constructor(
+    private readonly containerService: ContainerService,
+    private readonly containerTransactionService: ContainerTransactionService,
+    private readonly changeDetectorRef: ChangeDetectorRef
+  ) {}
+
+  ngOnInit(): void {
+    this.loadContainers();
+  }
+
+  loadContainers(): void {
+    this.isLoadingContainers = true;
+    this.changeDetectorRef.detectChanges();
+
+    this.containerService.getContainers(0, 100).subscribe({
+      next: (response) => {
+        this.containers = response.items ?? [];
+        this.isLoadingContainers = false;
+        this.changeDetectorRef.detectChanges();
+      },
+      error: (error) => {
+        console.error('Load containers for yard operations failed:', error);
+
+        this.importErrorMessage =
+          'Không tải được danh sách container. Hãy kiểm tra backend Docker hoặc proxy.';
+
+        this.isLoadingContainers = false;
+        this.changeDetectorRef.detectChanges();
+      },
+    });
+  }
+
   setActiveTab(tab: YardOperationTab): void {
     this.activeTab = tab;
+    this.changeDetectorRef.detectChanges();
   }
 
   submitImport(): void {
-    console.log('Import form:', this.importForm);
+    this.importSuccessMessage = '';
+    this.importErrorMessage = '';
+
+    const validationMessage = this.validateImportForm();
+
+    if (validationMessage) {
+      this.importErrorMessage = validationMessage;
+      this.changeDetectorRef.detectChanges();
+      return;
+    }
+
+    const selectedContainerBeforeImport = this.getSelectedImportContainer();
+
+    const request: ImportContainerRequest = {
+      containerId: this.importForm.containerId as number,
+      toBlockId: this.importForm.toBlockId as number,
+      toBay: this.importForm.toBay as number,
+      toRow: this.importForm.toRow as number,
+      toTier: this.importForm.toTier as number,
+      vehicleNumber: this.importForm.vehicleNumber.trim() || null,
+      transactionTime: this.importForm.transactionTime || null,
+      note: this.importForm.note.trim() || null,
+    };
+
+    this.isImportSubmitting = true;
+    this.changeDetectorRef.detectChanges();
+
+    this.containerTransactionService.importContainer(request).subscribe({
+      next: (transactionId) => {
+        console.log('Import container success. Transaction id:', transactionId);
+
+        this.importSuccessMessage = `Nhập bãi thành công. Mã giao dịch: ${transactionId}.`;
+        this.importErrorMessage = '';
+
+        this.historyItems = [
+          {
+            id: `TRX-${transactionId}`,
+            containerNumber:
+              selectedContainerBeforeImport?.containerNumber ?? `ID ${request.containerId}`,
+            transactionType: 'In',
+            fromPosition: '-',
+            toPosition: `Block ${request.toBlockId} / Bay ${request.toBay} / Row ${request.toRow} / Tier ${request.toTier}`,
+            vehicleNumber: request.vehicleNumber ?? '-',
+            transactionTime: this.formatDateTimeForDisplay(request.transactionTime),
+            note: request.note ?? 'Container nhập bãi',
+          },
+          ...this.historyItems,
+        ];
+
+        this.resetImportForm();
+
+        this.isImportSubmitting = false;
+        this.changeDetectorRef.detectChanges();
+
+        this.loadContainers();
+      },
+      error: (error) => {
+        console.error('Import container failed:', error);
+
+        this.importErrorMessage = this.getApiErrorMessage(
+          error,
+          'Không nhập được container. Hãy kiểm tra container, vị trí bãi hoặc rule nghiệp vụ backend.'
+        );
+
+        this.importSuccessMessage = '';
+        this.isImportSubmitting = false;
+        this.changeDetectorRef.detectChanges();
+      },
+    });
+  }
+
+  validateImportForm(): string {
+    if (!this.importForm.containerId) {
+      return 'Vui lòng chọn container cần nhập bãi.';
+    }
+
+    if (!this.importForm.toBlockId) {
+      return 'Vui lòng nhập ToBlockId.';
+    }
+
+    if (!this.importForm.toBay || this.importForm.toBay <= 0) {
+      return 'Vui lòng nhập Bay hợp lệ.';
+    }
+
+    if (!this.importForm.toRow || this.importForm.toRow <= 0) {
+      return 'Vui lòng nhập Row hợp lệ.';
+    }
+
+    if (!this.importForm.toTier || this.importForm.toTier <= 0) {
+      return 'Vui lòng nhập Tier hợp lệ.';
+    }
+
+    return '';
+  }
+
+  resetImportForm(): void {
+    this.importForm = {
+      containerId: null,
+      toBlockId: null,
+      toBay: null,
+      toRow: null,
+      toTier: null,
+      vehicleNumber: '',
+      transactionTime: this.getCurrentDateTimeInputValue(),
+      note: '',
+    };
   }
 
   submitExport(): void {
@@ -105,6 +256,82 @@ export class YardOperations {
 
   submitMove(): void {
     console.log('Move form:', this.moveForm);
+  }
+
+  getSelectedImportContainer(): ContainerResponse | undefined {
+    if (!this.importForm.containerId) {
+      return undefined;
+    }
+
+    return this.containers.find((container) => container.id === this.importForm.containerId);
+  }
+
+  getApiErrorMessage(error: any, fallbackMessage: string): string {
+    const responseBody = error?.error;
+
+    if (typeof responseBody === 'string') {
+      return responseBody;
+    }
+
+    if (responseBody?.Message) {
+      return responseBody.Message;
+    }
+
+    if (responseBody?.message) {
+      return responseBody.message;
+    }
+
+    if (responseBody?.Title) {
+      return responseBody.Title;
+    }
+
+    if (responseBody?.title) {
+      return responseBody.title;
+    }
+
+    if (responseBody?.Errors) {
+      if (Array.isArray(responseBody.Errors)) {
+        return responseBody.Errors
+          .map((item: any) => item?.Message || item?.message || item)
+          .filter((message: string) => !!message)
+          .join(' ');
+      }
+
+      const firstKey = Object.keys(responseBody.Errors)[0];
+
+      if (firstKey) {
+        const firstError = responseBody.Errors[firstKey];
+
+        if (Array.isArray(firstError)) {
+          return firstError.join(' ');
+        }
+
+        return String(firstError);
+      }
+    }
+
+    if (responseBody?.errors) {
+      if (Array.isArray(responseBody.errors)) {
+        return responseBody.errors
+          .map((item: any) => item?.Message || item?.message || item)
+          .filter((message: string) => !!message)
+          .join(' ');
+      }
+
+      const firstKey = Object.keys(responseBody.errors)[0];
+
+      if (firstKey) {
+        const firstError = responseBody.errors[firstKey];
+
+        if (Array.isArray(firstError)) {
+          return firstError.join(' ');
+        }
+
+        return String(firstError);
+      }
+    }
+
+    return fallbackMessage;
   }
 
   getTransactionClass(type: string): string {
@@ -123,6 +350,14 @@ export class YardOperations {
     }
 
     return '';
+  }
+
+  formatDateTimeForDisplay(dateTimeValue: string | null): string {
+    if (!dateTimeValue) {
+      return '-';
+    }
+
+    return dateTimeValue.replace('T', ' ');
   }
 
   private getCurrentDateTimeInputValue(): string {

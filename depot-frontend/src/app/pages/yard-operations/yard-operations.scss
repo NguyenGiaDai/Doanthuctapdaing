@@ -28,41 +28,10 @@
 
 .page-description {
   margin: 14px 0 0;
-  max-width: 820px;
+  max-width: 920px;
   color: #64748b;
   font-size: 16px;
   font-weight: 600;
-}
-
-.summary-card {
-  width: 260px;
-  flex-shrink: 0;
-  padding: 18px;
-  border: 1px solid #dbeafe;
-  border-radius: 22px;
-  background: #eff6ff;
-}
-
-.summary-card span {
-  display: block;
-  margin-bottom: 8px;
-  color: #2563eb;
-  font-size: 12px;
-  font-weight: 900;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.summary-card strong {
-  color: #0f172a;
-  font-size: 18px;
-}
-
-.summary-card p {
-  margin: 8px 0 0;
-  color: #64748b;
-  font-size: 13px;
-  font-weight: 700;
 }
 
 .operation-tabs {
@@ -186,6 +155,33 @@
   gap: 22px;
 }
 
+.alert-message {
+  padding: 16px 18px;
+  border-radius: 16px;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.6;
+  border: 1px solid transparent;
+}
+
+.alert-message.info {
+  background: #eff6ff;
+  border-color: #dbeafe;
+  color: #1d4ed8;
+}
+
+.alert-message.success {
+  background: #ecfdf5;
+  border-color: #bbf7d0;
+  color: #166534;
+}
+
+.alert-message.error {
+  background: #fef2f2;
+  border-color: #fecaca;
+  color: #b91c1c;
+}
+
 .form-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -210,6 +206,7 @@
 }
 
 .form-grid input,
+.form-grid select,
 .form-grid textarea {
   width: 100%;
   box-sizing: border-box;
@@ -221,39 +218,24 @@
   outline: none;
 }
 
-.form-grid input {
+.form-grid input,
+.form-grid select {
   height: 50px;
   padding: 0 14px;
 }
 
 .form-grid textarea {
   resize: vertical;
-  min-height: 110px;
+  min-height: 120px;
   padding: 14px;
   line-height: 1.5;
 }
 
 .form-grid input:focus,
+.form-grid select:focus,
 .form-grid textarea:focus {
   border-color: #2563eb;
   box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
-}
-
-.business-note {
-  padding: 16px 18px;
-  border: 1px solid #dbeafe;
-  border-radius: 18px;
-  background: #eff6ff;
-  color: #1e3a8a;
-  font-size: 14px;
-  font-weight: 700;
-  line-height: 1.6;
-}
-
-.business-note.warning {
-  border-color: #fde68a;
-  background: #fffbeb;
-  color: #92400e;
 }
 
 .form-actions {
@@ -277,6 +259,12 @@
 .primary-button:hover {
   transform: translateY(-1px);
   box-shadow: 0 16px 38px rgba(15, 23, 42, 0.24);
+}
+
+.primary-button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none;
 }
 
 .history-table-wrap {
@@ -312,14 +300,6 @@
 }
 
 @media (max-width: 1200px) {
-  .page-header {
-    flex-direction: column;
-  }
-
-  .summary-card {
-    width: 100%;
-  }
-
   .operation-tabs {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
