@@ -203,7 +203,7 @@ export class YardOperations implements OnInit {
 
         this.importErrorMessage = this.getApiErrorMessage(
           error,
-          'Không nhập được container. Hãy kiểm tra container, vị trí bãi hoặc rule nghiệp vụ backend.'
+          'Không nhập được container. Hãy kiểm tra container, vị trí bãi hoặc quy tắc nghiệp vụ.'
         );
 
         this.importSuccessMessage = '';
@@ -218,20 +218,36 @@ export class YardOperations implements OnInit {
       return 'Vui lòng chọn container cần nhập bãi.';
     }
 
-    if (!this.importForm.toBlockId) {
-      return 'Vui lòng nhập ToBlockId.';
+    if (this.isEmptyNumber(this.importForm.toBlockId)) {
+      return 'Vui lòng nhập Block.';
     }
 
-    if (!this.importForm.toBay || this.importForm.toBay <= 0) {
-      return 'Vui lòng nhập Bay hợp lệ.';
+    if ((this.importForm.toBlockId as number) <= 0) {
+      return 'Block phải lớn hơn 0.';
     }
 
-    if (!this.importForm.toRow || this.importForm.toRow <= 0) {
-      return 'Vui lòng nhập Row hợp lệ.';
+    if (this.isEmptyNumber(this.importForm.toBay)) {
+      return 'Vui lòng nhập Bay.';
     }
 
-    if (!this.importForm.toTier || this.importForm.toTier <= 0) {
-      return 'Vui lòng nhập Tier hợp lệ.';
+    if ((this.importForm.toBay as number) <= 0) {
+      return 'Bay phải lớn hơn 0.';
+    }
+
+    if (this.isEmptyNumber(this.importForm.toRow)) {
+      return 'Vui lòng nhập Row.';
+    }
+
+    if ((this.importForm.toRow as number) <= 0) {
+      return 'Row phải lớn hơn 0.';
+    }
+
+    if (this.isEmptyNumber(this.importForm.toTier)) {
+      return 'Vui lòng nhập Tier.';
+    }
+
+    if ((this.importForm.toTier as number) <= 0) {
+      return 'Tier phải lớn hơn 0.';
     }
 
     return '';
@@ -270,31 +286,33 @@ export class YardOperations implements OnInit {
     const responseBody = error?.error;
 
     if (typeof responseBody === 'string') {
-      return responseBody;
+      return this.normalizeApiErrorMessage(responseBody);
     }
 
     if (responseBody?.Message) {
-      return responseBody.Message;
+      return this.normalizeApiErrorMessage(responseBody.Message);
     }
 
     if (responseBody?.message) {
-      return responseBody.message;
+      return this.normalizeApiErrorMessage(responseBody.message);
     }
 
     if (responseBody?.Title) {
-      return responseBody.Title;
+      return this.normalizeApiErrorMessage(responseBody.Title);
     }
 
     if (responseBody?.title) {
-      return responseBody.title;
+      return this.normalizeApiErrorMessage(responseBody.title);
     }
 
     if (responseBody?.Errors) {
       if (Array.isArray(responseBody.Errors)) {
-        return responseBody.Errors
+        const message = responseBody.Errors
           .map((item: any) => item?.Message || item?.message || item)
-          .filter((message: string) => !!message)
+          .filter((itemMessage: string) => !!itemMessage)
           .join(' ');
+
+        return this.normalizeApiErrorMessage(message);
       }
 
       const firstKey = Object.keys(responseBody.Errors)[0];
@@ -303,19 +321,21 @@ export class YardOperations implements OnInit {
         const firstError = responseBody.Errors[firstKey];
 
         if (Array.isArray(firstError)) {
-          return firstError.join(' ');
+          return this.normalizeApiErrorMessage(firstError.join(' '));
         }
 
-        return String(firstError);
+        return this.normalizeApiErrorMessage(String(firstError));
       }
     }
 
     if (responseBody?.errors) {
       if (Array.isArray(responseBody.errors)) {
-        return responseBody.errors
+        const message = responseBody.errors
           .map((item: any) => item?.Message || item?.message || item)
-          .filter((message: string) => !!message)
+          .filter((itemMessage: string) => !!itemMessage)
           .join(' ');
+
+        return this.normalizeApiErrorMessage(message);
       }
 
       const firstKey = Object.keys(responseBody.errors)[0];
@@ -324,10 +344,10 @@ export class YardOperations implements OnInit {
         const firstError = responseBody.errors[firstKey];
 
         if (Array.isArray(firstError)) {
-          return firstError.join(' ');
+          return this.normalizeApiErrorMessage(firstError.join(' '));
         }
 
-        return String(firstError);
+        return this.normalizeApiErrorMessage(String(firstError));
       }
     }
 
@@ -358,6 +378,24 @@ export class YardOperations implements OnInit {
     }
 
     return dateTimeValue.replace('T', ' ');
+  }
+
+  private isEmptyNumber(value: number | null): boolean {
+    return value === null || value === undefined;
+  }
+
+  private normalizeApiErrorMessage(message: string): string {
+    return message
+      .replace(/ToBlockId/g, 'Block')
+      .replace(/toBlockId/g, 'Block')
+      .replace(/ToBay/g, 'Bay')
+      .replace(/toBay/g, 'Bay')
+      .replace(/ToRow/g, 'Row')
+      .replace(/toRow/g, 'Row')
+      .replace(/ToTier/g, 'Tier')
+      .replace(/toTier/g, 'Tier')
+      .replace(/containerId/g, 'container')
+      .replace(/ContainerId/g, 'container');
   }
 
   private getCurrentDateTimeInputValue(): string {

@@ -93,10 +93,11 @@
           </label>
 
           <label>
-            <span>Block đích</span>
+            <span>Block</span>
             <input
               type="number"
               name="importToBlockId"
+              min="1"
               placeholder="Ví dụ: 1"
               [(ngModel)]="importForm.toBlockId"
               [disabled]="isImportSubmitting"
@@ -108,6 +109,7 @@
             <input
               type="number"
               name="importToBay"
+              min="1"
               placeholder="1"
               [(ngModel)]="importForm.toBay"
               [disabled]="isImportSubmitting"
@@ -119,6 +121,7 @@
             <input
               type="number"
               name="importToRow"
+              min="1"
               placeholder="1"
               [(ngModel)]="importForm.toRow"
               [disabled]="isImportSubmitting"
@@ -130,6 +133,7 @@
             <input
               type="number"
               name="importToTier"
+              min="1"
               placeholder="1"
               [(ngModel)]="importForm.toTier"
               [disabled]="isImportSubmitting"
@@ -298,6 +302,7 @@
             <input
               type="number"
               name="moveCurrentBay"
+              min="1"
               [(ngModel)]="moveForm.currentBay"
             />
           </label>
@@ -307,6 +312,7 @@
             <input
               type="number"
               name="moveCurrentRow"
+              min="1"
               [(ngModel)]="moveForm.currentRow"
             />
           </label>
@@ -316,6 +322,7 @@
             <input
               type="number"
               name="moveCurrentTier"
+              min="1"
               [(ngModel)]="moveForm.currentTier"
             />
           </label>
@@ -335,6 +342,7 @@
             <input
               type="number"
               name="moveNewBay"
+              min="1"
               placeholder="3"
               [(ngModel)]="moveForm.newBay"
             />
@@ -345,6 +353,7 @@
             <input
               type="number"
               name="moveNewRow"
+              min="1"
               placeholder="2"
               [(ngModel)]="moveForm.newRow"
             />
@@ -355,6 +364,7 @@
             <input
               type="number"
               name="moveNewTier"
+              min="1"
               placeholder="1"
               [(ngModel)]="moveForm.newTier"
             />
@@ -420,9 +430,9 @@
             </td>
             <td>{{ item.containerNumber }}</td>
             <td>
-                <span class="transaction-badge" [ngClass]="getTransactionClass(item.transactionType)">
-                  {{ item.transactionType }}
-                </span>
+              <span class="transaction-badge" [ngClass]="getTransactionClass(item.transactionType)">
+                {{ item.transactionType }}
+              </span>
             </td>
             <td>{{ item.fromPosition }}</td>
             <td>{{ item.toPosition }}</td>
