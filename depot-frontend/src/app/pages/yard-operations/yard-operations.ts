@@ -3,7 +3,10 @@ import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
 import { ContainerResponse } from '../../models/container.model';
-import { ImportContainerRequest } from '../../models/container-transaction.model';
+import {
+  ContainerTransactionResponse,
+  ImportContainerRequest,
+} from '../../models/container-transaction.model';
 
 import { ContainerService } from '../../services/container.service';
 import { ContainerTransactionService } from '../../services/container-transaction.service';
@@ -32,6 +35,9 @@ export class YardOperations implements OnInit {
 
   containers: ContainerResponse[] = [];
   isLoadingContainers = false;
+
+  isLoadingHistory = false;
+  historyErrorMessage = '';
 
   isImportSubmitting = false;
   importSuccessMessage = '';
@@ -71,38 +77,7 @@ export class YardOperations implements OnInit {
     note: '',
   };
 
-  historyItems: YardOperationHistoryItem[] = [
-    {
-      id: 'TRX-001',
-      containerNumber: 'CMAU1234564',
-      transactionType: 'In',
-      fromPosition: '-',
-      toPosition: 'A01 / Bay 1 / Row 2 / Tier 1',
-      vehicleNumber: '51C-12345',
-      transactionTime: '2026-05-06 08:30',
-      note: 'Container nhập bãi',
-    },
-    {
-      id: 'TRX-002',
-      containerNumber: 'TEMU1234565',
-      transactionType: 'Move',
-      fromPosition: 'A01 / Bay 1 / Row 1 / Tier 1',
-      toPosition: 'A01 / Bay 3 / Row 2 / Tier 1',
-      vehicleNumber: 'RTG-02',
-      transactionTime: '2026-05-06 10:15',
-      note: 'Di dời nội bộ',
-    },
-    {
-      id: 'TRX-003',
-      containerNumber: 'MSCU1234567',
-      transactionType: 'Out',
-      fromPosition: 'B02 / Bay 2 / Row 1 / Tier 1',
-      toPosition: '-',
-      vehicleNumber: '51D-67890',
-      transactionTime: '2026-05-06 14:20',
-      note: 'Xuất container theo DO',
-    },
-  ];
+  historyItems: YardOperationHistoryItem[] = [];
 
   constructor(
     private readonly containerService: ContainerService,
@@ -122,6 +97,9 @@ export class YardOperations implements OnInit {
       next: (response) => {
         this.containers = response.items ?? [];
         this.isLoadingContainers = false;
+
+        this.loadTransactionHistory();
+
         this.changeDetectorRef.detectChanges();
       },
       error: (error) => {
@@ -131,6 +109,43 @@ export class YardOperations implements OnInit {
           'Không tải được danh sách container. Hãy kiểm tra backend Docker hoặc proxy.';
 
         this.isLoadingContainers = false;
+
+        this.loadTransactionHistory();
+
+        this.changeDetectorRef.detectChanges();
+      },
+    });
+  }
+
+  loadTransactionHistory(): void {
+    this.isLoadingHistory = true;
+    this.historyErrorMessage = '';
+    this.changeDetectorRef.detectChanges();
+
+    this.containerTransactionService.getContainerTransactions(1, 50).subscribe({
+      next: (response) => {
+        const transactions = response.items ?? [];
+
+        this.historyItems = transactions
+          .sort((firstTransaction, secondTransaction) => {
+            const firstTime = this.getTransactionTimeValue(firstTransaction.transactionTime);
+            const secondTime = this.getTransactionTimeValue(secondTransaction.transactionTime);
+
+            return secondTime - firstTime;
+          })
+          .map((transaction) => this.mapTransactionToHistoryItem(transaction));
+
+        this.isLoadingHistory = false;
+        this.changeDetectorRef.detectChanges();
+      },
+      error: (error) => {
+        console.error('Load transaction history failed:', error);
+
+        this.historyErrorMessage =
+          'Không tải được lịch sử container. Hãy kiểm tra backend Docker, proxy hoặc API ContainerTransaction.';
+
+        this.historyItems = [];
+        this.isLoadingHistory = false;
         this.changeDetectorRef.detectChanges();
       },
     });
@@ -138,6 +153,11 @@ export class YardOperations implements OnInit {
 
   setActiveTab(tab: YardOperationTab): void {
     this.activeTab = tab;
+
+    if (tab === 'history') {
+      this.loadTransactionHistory();
+    }
+
     this.changeDetectorRef.detectChanges();
   }
 
@@ -152,8 +172,6 @@ export class YardOperations implements OnInit {
       this.changeDetectorRef.detectChanges();
       return;
     }
-
-    const selectedContainerBeforeImport = this.getSelectedImportContainer();
 
     const request: ImportContainerRequest = {
       containerId: this.importForm.containerId as number,
@@ -175,21 +193,6 @@ export class YardOperations implements OnInit {
 
         this.importSuccessMessage = `Nhập bãi thành công. Mã giao dịch: ${transactionId}.`;
         this.importErrorMessage = '';
-
-        this.historyItems = [
-          {
-            id: `TRX-${transactionId}`,
-            containerNumber:
-              selectedContainerBeforeImport?.containerNumber ?? `ID ${request.containerId}`,
-            transactionType: 'In',
-            fromPosition: '-',
-            toPosition: `Block ${request.toBlockId} / Bay ${request.toBay} / Row ${request.toRow} / Tier ${request.toTier}`,
-            vehicleNumber: request.vehicleNumber ?? '-',
-            transactionTime: this.formatDateTimeForDisplay(request.transactionTime),
-            note: request.note ?? 'Container nhập bãi',
-          },
-          ...this.historyItems,
-        ];
 
         this.resetImportForm();
 
@@ -378,6 +381,83 @@ export class YardOperations implements OnInit {
     }
 
     return dateTimeValue.replace('T', ' ');
+  }
+
+  private mapTransactionToHistoryItem(
+    transaction: ContainerTransactionResponse
+  ): YardOperationHistoryItem {
+    return {
+      id: `TRX-${transaction.id}`,
+      containerNumber: this.getContainerNumberById(transaction.containerId),
+      transactionType: this.normalizeTransactionType(transaction.transactionType),
+      fromPosition: this.formatPosition(
+        transaction.fromBlockId,
+        transaction.fromBay,
+        transaction.fromRow,
+        transaction.fromTier
+      ),
+      toPosition: this.formatPosition(
+        transaction.toBlockId,
+        transaction.toBay,
+        transaction.toRow,
+        transaction.toTier
+      ),
+      vehicleNumber: transaction.vehicleNumber || '-',
+      transactionTime: this.formatDateTimeForDisplay(transaction.transactionTime),
+      note: transaction.note || '-',
+    };
+  }
+
+  private getContainerNumberById(containerId: number): string {
+    const container = this.containers.find((item) => item.id === containerId);
+
+    return container?.containerNumber ?? `ID ${containerId}`;
+  }
+
+  private normalizeTransactionType(transactionType: string): 'In' | 'Out' | 'Move' {
+    const normalizedType = transactionType.toLowerCase();
+
+    if (normalizedType === 'out') {
+      return 'Out';
+    }
+
+    if (normalizedType === 'move') {
+      return 'Move';
+    }
+
+    return 'In';
+  }
+
+  private formatPosition(
+    blockId: number | null,
+    bay: number | null,
+    row: number | null,
+    tier: number | null
+  ): string {
+    if (!blockId && !bay && !row && !tier) {
+      return '-';
+    }
+
+    const blockText = blockId ? `Block ${blockId}` : 'Block -';
+    const bayText = bay ? `Bay ${bay}` : 'Bay -';
+    const rowText = row ? `Row ${row}` : 'Row -';
+    const tierText = tier ? `Tier ${tier}` : 'Tier -';
+
+    return `${blockText} / ${bayText} / ${rowText} / ${tierText}`;
+  }
+
+  private getTransactionTimeValue(transactionTime: string | null): number {
+    if (!transactionTime) {
+      return 0;
+    }
+
+    const timeValue = new Date(transactionTime).getTime();
+
+    if (Number.isNaN(timeValue)) {
+      return 0;
+    }
+
+    return timeValue;
   }
 
   private isEmptyNumber(value: number | null): boolean {
