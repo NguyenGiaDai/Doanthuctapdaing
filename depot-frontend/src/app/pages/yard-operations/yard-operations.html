@@ -1,1 +1,430 @@
-<p>yard-operations works!</p>
+<div class="yard-operations-page">
+  <section class="page-header">
+    <div>
+      <p class="page-kicker">YARD OPERATIONS</p>
+      <h1>Vận hành nhập / xuất container</h1>
+      <p class="page-description">
+        Quản lý các nghiệp vụ vận hành bãi: nhập container vào bãi, xuất container theo lệnh giao,
+        di dời vị trí và theo dõi lịch sử giao dịch.
+      </p>
+    </div>
+
+    <div class="summary-card">
+      <span>Trạng thái</span>
+      <strong>UI nghiệp vụ</strong>
+      <p>Bước này dựng giao diện, bước sau nối API thật.</p>
+    </div>
+  </section>
+
+  <section class="operation-tabs">
+    <button
+      type="button"
+      [class.active]="activeTab === 'import'"
+      (click)="setActiveTab('import')"
+    >
+      <span>01</span>
+      Nhập container
+    </button>
+
+    <button
+      type="button"
+      [class.active]="activeTab === 'export'"
+      (click)="setActiveTab('export')"
+    >
+      <span>02</span>
+      Xuất container
+    </button>
+
+    <button
+      type="button"
+      [class.active]="activeTab === 'move'"
+      (click)="setActiveTab('move')"
+    >
+      <span>03</span>
+      Di dời container
+    </button>
+
+    <button
+      type="button"
+      [class.active]="activeTab === 'history'"
+      (click)="setActiveTab('history')"
+    >
+      <span>04</span>
+      Lịch sử giao dịch
+    </button>
+  </section>
+
+  <section class="operation-content">
+    <article *ngIf="activeTab === 'import'" class="operation-card">
+      <div class="card-header">
+        <div>
+          <p>IMPORT CONTAINER</p>
+          <h2>Nhập container vào bãi</h2>
+        </div>
+
+        <span class="badge import">In</span>
+      </div>
+
+      <form class="operation-form" (ngSubmit)="submitImport()">
+        <div class="form-grid">
+          <label>
+            <span>Số container</span>
+            <input
+              type="text"
+              name="importContainerNumber"
+              placeholder="Ví dụ: CMAU1234564"
+              [(ngModel)]="importForm.containerNumber"
+            />
+          </label>
+
+          <label>
+            <span>Block nhận container</span>
+            <input
+              type="text"
+              name="importToBlock"
+              placeholder="Ví dụ: A01"
+              [(ngModel)]="importForm.toBlock"
+            />
+          </label>
+
+          <label>
+            <span>Bay</span>
+            <input
+              type="number"
+              name="importToBay"
+              placeholder="1"
+              [(ngModel)]="importForm.toBay"
+            />
+          </label>
+
+          <label>
+            <span>Row</span>
+            <input
+              type="number"
+              name="importToRow"
+              placeholder="1"
+              [(ngModel)]="importForm.toRow"
+            />
+          </label>
+
+          <label>
+            <span>Tier</span>
+            <input
+              type="number"
+              name="importToTier"
+              placeholder="1"
+              [(ngModel)]="importForm.toTier"
+            />
+          </label>
+
+          <label>
+            <span>Số xe vận chuyển</span>
+            <input
+              type="text"
+              name="importVehicleNumber"
+              placeholder="Ví dụ: 51C-12345"
+              [(ngModel)]="importForm.vehicleNumber"
+            />
+          </label>
+
+          <label>
+            <span>Thời gian nhập</span>
+            <input
+              type="datetime-local"
+              name="importTransactionTime"
+              [(ngModel)]="importForm.transactionTime"
+            />
+          </label>
+
+          <label class="full-width">
+            <span>Ghi chú</span>
+            <textarea
+              name="importNote"
+              rows="4"
+              placeholder="Nhập ghi chú nếu có..."
+              [(ngModel)]="importForm.note"
+            ></textarea>
+          </label>
+        </div>
+
+        <div class="business-note">
+          <strong>Luồng nghiệp vụ:</strong>
+          kiểm tra container, kiểm tra vị trí trống, tạo giao dịch In, ghi nhận ContainerPosition,
+          cập nhật trạng thái container thành InYard.
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" class="primary-button">
+            Xác nhận nhập bãi
+          </button>
+        </div>
+      </form>
+    </article>
+
+    <article *ngIf="activeTab === 'export'" class="operation-card">
+      <div class="card-header">
+        <div>
+          <p>EXPORT CONTAINER</p>
+          <h2>Xuất container khỏi bãi</h2>
+        </div>
+
+        <span class="badge export">Out</span>
+      </div>
+
+      <form class="operation-form" (ngSubmit)="submitExport()">
+        <div class="form-grid">
+          <label>
+            <span>Số container</span>
+            <input
+              type="text"
+              name="exportContainerNumber"
+              placeholder="Ví dụ: CMAU1234564"
+              [(ngModel)]="exportForm.containerNumber"
+            />
+          </label>
+
+          <label>
+            <span>Số lệnh giao container</span>
+            <input
+              type="text"
+              name="exportDeliveryOrderNumber"
+              placeholder="Ví dụ: DO-2026-001"
+              [(ngModel)]="exportForm.deliveryOrderNumber"
+            />
+          </label>
+
+          <label>
+            <span>Số xe vận chuyển</span>
+            <input
+              type="text"
+              name="exportVehicleNumber"
+              placeholder="Ví dụ: 51D-67890"
+              [(ngModel)]="exportForm.vehicleNumber"
+            />
+          </label>
+
+          <label>
+            <span>Thời gian xuất</span>
+            <input
+              type="datetime-local"
+              name="exportTransactionTime"
+              [(ngModel)]="exportForm.transactionTime"
+            />
+          </label>
+
+          <label class="full-width">
+            <span>Ghi chú</span>
+            <textarea
+              name="exportNote"
+              rows="4"
+              placeholder="Nhập ghi chú nếu có..."
+              [(ngModel)]="exportForm.note"
+            ></textarea>
+          </label>
+        </div>
+
+        <div class="business-note warning">
+          <strong>Luồng nghiệp vụ:</strong>
+          xuất container phải có Delivery Order hợp lệ, còn hạn, đúng hãng khai thác,
+          đúng loại container và container phải đang ở trong bãi.
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" class="primary-button">
+            Xác nhận xuất bãi
+          </button>
+        </div>
+      </form>
+    </article>
+
+    <article *ngIf="activeTab === 'move'" class="operation-card">
+      <div class="card-header">
+        <div>
+          <p>MOVE CONTAINER</p>
+          <h2>Di dời container trong bãi</h2>
+        </div>
+
+        <span class="badge move">Move</span>
+      </div>
+
+      <form class="operation-form" (ngSubmit)="submitMove()">
+        <div class="form-grid">
+          <label>
+            <span>Số container</span>
+            <input
+              type="text"
+              name="moveContainerNumber"
+              placeholder="Ví dụ: TEMU1234565"
+              [(ngModel)]="moveForm.containerNumber"
+            />
+          </label>
+
+          <label>
+            <span>Position Id hiện tại</span>
+            <input
+              type="text"
+              name="moveCurrentPositionId"
+              placeholder="Ví dụ: 1"
+              [(ngModel)]="moveForm.currentPositionId"
+            />
+          </label>
+
+          <label>
+            <span>Block hiện tại</span>
+            <input
+              type="text"
+              name="moveCurrentBlock"
+              placeholder="Ví dụ: A01"
+              [(ngModel)]="moveForm.currentBlock"
+            />
+          </label>
+
+          <label>
+            <span>Bay hiện tại</span>
+            <input
+              type="number"
+              name="moveCurrentBay"
+              [(ngModel)]="moveForm.currentBay"
+            />
+          </label>
+
+          <label>
+            <span>Row hiện tại</span>
+            <input
+              type="number"
+              name="moveCurrentRow"
+              [(ngModel)]="moveForm.currentRow"
+            />
+          </label>
+
+          <label>
+            <span>Tier hiện tại</span>
+            <input
+              type="number"
+              name="moveCurrentTier"
+              [(ngModel)]="moveForm.currentTier"
+            />
+          </label>
+
+          <label>
+            <span>Block mới</span>
+            <input
+              type="text"
+              name="moveNewBlock"
+              placeholder="Ví dụ: B02"
+              [(ngModel)]="moveForm.newBlock"
+            />
+          </label>
+
+          <label>
+            <span>Bay mới</span>
+            <input
+              type="number"
+              name="moveNewBay"
+              placeholder="3"
+              [(ngModel)]="moveForm.newBay"
+            />
+          </label>
+
+          <label>
+            <span>Row mới</span>
+            <input
+              type="number"
+              name="moveNewRow"
+              placeholder="2"
+              [(ngModel)]="moveForm.newRow"
+            />
+          </label>
+
+          <label>
+            <span>Tier mới</span>
+            <input
+              type="number"
+              name="moveNewTier"
+              placeholder="1"
+              [(ngModel)]="moveForm.newTier"
+            />
+          </label>
+
+          <label>
+            <span>Thời gian di dời</span>
+            <input
+              type="datetime-local"
+              name="movePositionTime"
+              [(ngModel)]="moveForm.positionTime"
+            />
+          </label>
+
+          <label class="full-width">
+            <span>Ghi chú</span>
+            <textarea
+              name="moveNote"
+              rows="4"
+              placeholder="Nhập ghi chú nếu có..."
+              [(ngModel)]="moveForm.note"
+            ></textarea>
+          </label>
+        </div>
+
+        <div class="business-note">
+          <strong>Luồng nghiệp vụ:</strong>
+          di dời container tận dụng cập nhật ContainerPosition hiện tại.
+          Khi nối API thật cần kiểm tra vị trí mới không bị trùng.
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" class="primary-button">
+            Xác nhận di dời
+          </button>
+        </div>
+      </form>
+    </article>
+
+    <article *ngIf="activeTab === 'history'" class="operation-card">
+      <div class="card-header">
+        <div>
+          <p>TRANSACTION HISTORY</p>
+          <h2>Lịch sử giao dịch container</h2>
+        </div>
+
+        <span class="record-count">{{ historyItems.length }} giao dịch</span>
+      </div>
+
+      <div class="history-table-wrap">
+        <table class="history-table">
+          <thead>
+          <tr>
+            <th>Mã giao dịch</th>
+            <th>Số container</th>
+            <th>Loại</th>
+            <th>Vị trí đi</th>
+            <th>Vị trí đến</th>
+            <th>Số xe</th>
+            <th>Thời gian</th>
+            <th>Ghi chú</th>
+          </tr>
+          </thead>
+
+          <tbody>
+          <tr *ngFor="let item of historyItems">
+            <td>
+              <strong>{{ item.id }}</strong>
+            </td>
+            <td>{{ item.containerNumber }}</td>
+            <td>
+              <span class="transaction-badge" [ngClass]="getTransactionClass(item.transactionType)">
+                {{ item.transactionType }}
+              </span>
+            </td>
+            <td>{{ item.fromPosition }}</td>
+            <td>{{ item.toPosition }}</td>
+            <td>{{ item.vehicleNumber || '-' }}</td>
+            <td>{{ item.transactionTime }}</td>
+            <td>{{ item.note || '-' }}</td>
+          </tr>
+          </tbody>
+        </table>
+      </div>
+    </article>
+  </section>
+</div>
