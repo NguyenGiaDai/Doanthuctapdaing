@@ -65,15 +65,15 @@
     </div>
   </section>
 
-  <section *ngIf="isAddContainerModalOpen" class="modal-backdrop">
-    <form class="container-form-card" (ngSubmit)="submitAddContainer()">
+  <section *ngIf="isContainerModalOpen" class="modal-backdrop">
+    <form class="container-form-card" (ngSubmit)="submitContainerForm()">
       <div class="form-header">
         <div>
-          <p>CONTAINER MỚI</p>
-          <h2>Thêm container</h2>
+          <p>{{ isEditMode ? 'CẬP NHẬT CONTAINER' : 'CONTAINER MỚI' }}</p>
+          <h2>{{ isEditMode ? 'Chỉnh sửa container' : 'Thêm container' }}</h2>
         </div>
 
-        <button type="button" class="icon-button" (click)="closeAddContainerModal()">
+        <button type="button" class="icon-button" (click)="closeContainerModal()">
           ×
         </button>
       </div>
@@ -86,8 +86,8 @@
         {{ dropdownErrorMessage }}
       </div>
 
-      <div *ngIf="addContainerErrorMessage" class="form-message error-card">
-        {{ addContainerErrorMessage }}
+      <div *ngIf="containerFormErrorMessage" class="form-message error-card">
+        {{ containerFormErrorMessage }}
       </div>
 
       <div class="form-grid">
@@ -97,8 +97,8 @@
             type="text"
             name="containerNumber"
             placeholder="Ví dụ: CMAU1234564"
-            [(ngModel)]="addContainerForm.containerNumber"
-            [disabled]="isSubmittingAddContainer"
+            [(ngModel)]="containerForm.containerNumber"
+            [disabled]="isSubmittingContainer"
           />
         </label>
 
@@ -106,8 +106,8 @@
           <span>Loại container</span>
           <select
             name="containerTypeId"
-            [(ngModel)]="addContainerForm.containerTypeId"
-            [disabled]="isSubmittingAddContainer"
+            [(ngModel)]="containerForm.containerTypeId"
+            [disabled]="isSubmittingContainer"
           >
             <option [ngValue]="null">Chọn loại container</option>
             <option *ngFor="let type of containerTypes" [ngValue]="type.id">
@@ -120,8 +120,8 @@
           <span>Hãng khai thác</span>
           <select
             name="lineOperatorId"
-            [(ngModel)]="addContainerForm.lineOperatorId"
-            [disabled]="isSubmittingAddContainer"
+            [(ngModel)]="containerForm.lineOperatorId"
+            [disabled]="isSubmittingContainer"
           >
             <option [ngValue]="null">Chọn hãng khai thác</option>
             <option *ngFor="let line of lineOperators" [ngValue]="line.id">
@@ -135,8 +135,8 @@
           <input
             type="date"
             name="dateOfManufacture"
-            [(ngModel)]="addContainerForm.dateOfManufacture"
-            [disabled]="isSubmittingAddContainer"
+            [(ngModel)]="containerForm.dateOfManufacture"
+            [disabled]="isSubmittingContainer"
           />
         </label>
 
@@ -146,8 +146,8 @@
             type="text"
             name="containerOwner"
             placeholder="Ví dụ: SNP"
-            [(ngModel)]="addContainerForm.containerOwner"
-            [disabled]="isSubmittingAddContainer"
+            [(ngModel)]="containerForm.containerOwner"
+            [disabled]="isSubmittingContainer"
           />
         </label>
 
@@ -155,8 +155,8 @@
           <span>Tình trạng</span>
           <select
             name="containerCondition"
-            [(ngModel)]="addContainerForm.containerCondition"
-            [disabled]="isSubmittingAddContainer"
+            [(ngModel)]="containerForm.containerCondition"
+            [disabled]="isSubmittingContainer"
           >
             <option value="Normal">Normal</option>
             <option value="Good">Good</option>
@@ -169,8 +169,8 @@
           <span>Phân loại</span>
           <select
             name="containerClassification"
-            [(ngModel)]="addContainerForm.containerClassification"
-            [disabled]="isSubmittingAddContainer"
+            [(ngModel)]="containerForm.containerClassification"
+            [disabled]="isSubmittingContainer"
           >
             <option value="A">A</option>
             <option value="B">B</option>
@@ -179,11 +179,11 @@
         </label>
 
         <label>
-          <span>Trạng thái ban đầu</span>
+          <span>{{ isEditMode ? 'Trạng thái hiện tại' : 'Trạng thái ban đầu' }}</span>
           <select
             name="currentStatus"
-            [(ngModel)]="addContainerForm.currentStatus"
-            [disabled]="isSubmittingAddContainer"
+            [(ngModel)]="containerForm.currentStatus"
+            [disabled]="isSubmittingContainer"
           >
             <option value="OutYard">OutYard</option>
             <option value="Reserved">Reserved</option>
@@ -196,8 +196,8 @@
         <button
           type="button"
           class="secondary-button"
-          (click)="closeAddContainerModal()"
-          [disabled]="isSubmittingAddContainer"
+          (click)="closeContainerModal()"
+          [disabled]="isSubmittingContainer"
         >
           Hủy
         </button>
@@ -205,9 +205,15 @@
         <button
           type="submit"
           class="primary-button"
-          [disabled]="isSubmittingAddContainer || isDropdownLoading"
+          [disabled]="isSubmittingContainer || isDropdownLoading"
         >
-          {{ isSubmittingAddContainer ? 'Đang lưu...' : 'Lưu container' }}
+          {{
+            isSubmittingContainer
+              ? 'Đang lưu...'
+              : isEditMode
+                ? 'Cập nhật container'
+                : 'Lưu container'
+          }}
         </button>
       </div>
     </form>
@@ -354,7 +360,9 @@
 
       <div class="detail-actions">
         <button type="button" class="secondary-button">Xem lịch sử</button>
-        <button type="button" class="primary-button">Chỉnh sửa</button>
+        <button type="button" class="primary-button" (click)="openEditContainerModal(container)">
+          Chỉnh sửa
+        </button>
       </div>
     </aside>
 

@@ -6,6 +6,7 @@ import {
   ContainerResponse,
   CreateContainerRequest,
   PaginationResponse,
+  UpdateContainerRequest,
 } from '../models/container.model';
 
 @Injectable({
@@ -24,5 +25,9 @@ export class ContainerService {
 
   createContainer(request: CreateContainerRequest): Observable<ContainerResponse> {
     return this.http.post<ContainerResponse>(this.apiUrl, request);
+  }
+
+  updateContainer(request: UpdateContainerRequest): Observable<ContainerResponse> {
+    return this.http.put<ContainerResponse>(this.apiUrl, request);
   }
 }

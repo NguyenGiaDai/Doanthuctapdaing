@@ -3,7 +3,12 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { forkJoin } from 'rxjs';
 
-import { ContainerResponse, CreateContainerRequest } from '../../models/container.model';
+import {
+  ContainerResponse,
+  CreateContainerRequest,
+  UpdateContainerRequest,
+} from '../../models/container.model';
+
 import { ContainerTypeResponse } from '../../models/container-type.model';
 import { LineOperatorResponse } from '../../models/line-operator.model';
 
@@ -44,11 +49,13 @@ export class Containers implements OnInit {
   isDropdownLoading = false;
   dropdownErrorMessage = '';
 
-  isAddContainerModalOpen = false;
-  isSubmittingAddContainer = false;
-  addContainerErrorMessage = '';
+  isContainerModalOpen = false;
+  isEditMode = false;
+  editingContainerId: number | null = null;
+  isSubmittingContainer = false;
+  containerFormErrorMessage = '';
 
-  addContainerForm = {
+  containerForm = {
     containerNumber: '',
     containerTypeId: null as number | null,
     lineOperatorId: null as number | null,
@@ -68,7 +75,7 @@ export class Containers implements OnInit {
 
   ngOnInit(): void {
     this.loadContainers();
-    this.loadAddContainerDropdowns();
+    this.loadContainerDropdowns();
   }
 
   loadContainers(): void {
@@ -87,7 +94,7 @@ export class Containers implements OnInit {
         this.currentPage = response.currentPage ?? 1;
 
         this.buildFilterOptions();
-        this.selectedContainer = this.containers.length > 0 ? this.containers[0] : null;
+        this.applyFiltersAfterReload();
 
         this.isLoading = false;
         this.changeDetectorRef.detectChanges();
@@ -104,7 +111,7 @@ export class Containers implements OnInit {
     });
   }
 
-  loadAddContainerDropdowns(): void {
+  loadContainerDropdowns(): void {
     this.isDropdownLoading = true;
     this.dropdownErrorMessage = '';
     this.changeDetectorRef.detectChanges();
@@ -124,7 +131,7 @@ export class Containers implements OnInit {
         this.changeDetectorRef.detectChanges();
       },
       error: (error) => {
-        console.error('Load add container dropdowns failed:', error);
+        console.error('Load container dropdowns failed:', error);
 
         this.dropdownErrorMessage =
           'Không tải được dữ liệu loại container hoặc hãng khai thác.';
@@ -136,55 +143,92 @@ export class Containers implements OnInit {
   }
 
   openAddContainerModal(): void {
-    this.addContainerErrorMessage = '';
-    this.isAddContainerModalOpen = true;
+    this.isEditMode = false;
+    this.editingContainerId = null;
+    this.containerFormErrorMessage = '';
+    this.resetContainerForm();
+    this.isContainerModalOpen = true;
 
     if (this.containerTypes.length === 0 || this.lineOperators.length === 0) {
-      this.loadAddContainerDropdowns();
+      this.loadContainerDropdowns();
     }
   }
 
-  closeAddContainerModal(): void {
-    if (this.isSubmittingAddContainer) {
+  openEditContainerModal(container: ContainerResponse): void {
+    this.isEditMode = true;
+    this.editingContainerId = container.id;
+    this.containerFormErrorMessage = '';
+
+    this.containerForm = {
+      containerNumber: container.containerNumber ?? '',
+      containerTypeId: container.containerTypeId || null,
+      lineOperatorId: container.lineOperatorId || null,
+      dateOfManufacture: this.toDateInputValue(container.dateOfManufacture),
+      containerOwner: container.containerOwner ?? '',
+      containerCondition: container.containerCondition || 'Normal',
+      containerClassification: container.containerClassification || 'A',
+      currentStatus: container.currentStatus || 'OutYard',
+    };
+
+    this.isContainerModalOpen = true;
+
+    if (this.containerTypes.length === 0 || this.lineOperators.length === 0) {
+      this.loadContainerDropdowns();
+    }
+  }
+
+  closeContainerModal(): void {
+    if (this.isSubmittingContainer) {
       return;
     }
 
-    this.isAddContainerModalOpen = false;
-    this.addContainerErrorMessage = '';
+    this.isContainerModalOpen = false;
+    this.containerFormErrorMessage = '';
+    this.isEditMode = false;
+    this.editingContainerId = null;
   }
 
-  submitAddContainer(): void {
-    this.addContainerErrorMessage = '';
+  submitContainerForm(): void {
+    this.containerFormErrorMessage = '';
 
-    const validationMessage = this.validateAddContainerForm();
+    const validationMessage = this.validateContainerForm();
 
     if (validationMessage) {
-      this.addContainerErrorMessage = validationMessage;
+      this.containerFormErrorMessage = validationMessage;
       this.changeDetectorRef.detectChanges();
       return;
     }
 
+    if (this.isEditMode) {
+      this.updateContainer();
+      return;
+    }
+
+    this.createContainer();
+  }
+
+  createContainer(): void {
     const request: CreateContainerRequest = {
-      containerNumber: this.addContainerForm.containerNumber.trim().toUpperCase(),
-      containerTypeId: this.addContainerForm.containerTypeId as number,
-      lineOperatorId: this.addContainerForm.lineOperatorId as number,
-      dateOfManufacture: this.addContainerForm.dateOfManufacture || null,
-      containerOwner: this.addContainerForm.containerOwner.trim(),
-      containerCondition: this.addContainerForm.containerCondition,
-      containerClassification: this.addContainerForm.containerClassification || null,
-      currentStatus: this.addContainerForm.currentStatus || null,
+      containerNumber: this.containerForm.containerNumber.trim().toUpperCase(),
+      containerTypeId: this.containerForm.containerTypeId as number,
+      lineOperatorId: this.containerForm.lineOperatorId as number,
+      dateOfManufacture: this.containerForm.dateOfManufacture || null,
+      containerOwner: this.containerForm.containerOwner.trim(),
+      containerCondition: this.containerForm.containerCondition,
+      containerClassification: this.containerForm.containerClassification || null,
+      currentStatus: this.containerForm.currentStatus || null,
     };
 
-    this.isSubmittingAddContainer = true;
+    this.isSubmittingContainer = true;
     this.changeDetectorRef.detectChanges();
 
     this.containerService.createContainer(request).subscribe({
       next: (createdContainer) => {
         console.log('Create container response:', createdContainer);
 
-        this.isSubmittingAddContainer = false;
-        this.isAddContainerModalOpen = false;
-        this.resetAddContainerForm();
+        this.isSubmittingContainer = false;
+        this.isContainerModalOpen = false;
+        this.resetContainerForm();
 
         this.loadContainers();
         this.changeDetectorRef.detectChanges();
@@ -192,43 +236,104 @@ export class Containers implements OnInit {
       error: (error) => {
         console.error('Create container failed:', error);
 
-        this.addContainerErrorMessage = this.getApiErrorMessage(
+        this.containerFormErrorMessage = this.getApiErrorMessage(
           error,
           'Không thêm được container. Hãy kiểm tra dữ liệu nhập hoặc backend.'
         );
 
-        this.isSubmittingAddContainer = false;
+        this.isSubmittingContainer = false;
         this.changeDetectorRef.detectChanges();
       },
     });
   }
 
-  validateAddContainerForm(): string {
-    if (!this.addContainerForm.containerNumber.trim()) {
+  updateContainer(): void {
+    if (!this.editingContainerId) {
+      this.containerFormErrorMessage = 'Không xác định được container cần cập nhật.';
+      return;
+    }
+
+    const request: UpdateContainerRequest = {
+      id: this.editingContainerId,
+      containerNumber: this.containerForm.containerNumber.trim().toUpperCase(),
+      containerTypeId: this.containerForm.containerTypeId as number,
+      lineOperatorId: this.containerForm.lineOperatorId as number,
+      dateOfManufacture: this.containerForm.dateOfManufacture || null,
+      containerOwner: this.containerForm.containerOwner.trim(),
+      containerCondition: this.containerForm.containerCondition,
+      containerClassification: this.containerForm.containerClassification || null,
+      currentStatus: this.containerForm.currentStatus || null,
+    };
+
+    this.isSubmittingContainer = true;
+    this.changeDetectorRef.detectChanges();
+
+    this.containerService.updateContainer(request).subscribe({
+      next: (updatedContainer) => {
+        console.log('Update container response:', updatedContainer);
+
+        this.isSubmittingContainer = false;
+        this.isContainerModalOpen = false;
+
+        const updatedId = this.editingContainerId;
+        this.isEditMode = false;
+        this.editingContainerId = null;
+        this.resetContainerForm();
+
+        this.loadContainers();
+
+        if (updatedId) {
+          const selectedAfterUpdate = this.allContainers.find(
+            (container) => container.id === updatedId
+          );
+
+          if (selectedAfterUpdate) {
+            this.selectedContainer = selectedAfterUpdate;
+          }
+        }
+
+        this.changeDetectorRef.detectChanges();
+      },
+      error: (error) => {
+        console.error('Update container failed:', error);
+
+        this.containerFormErrorMessage = this.getApiErrorMessage(
+          error,
+          'Không cập nhật được container. Hãy kiểm tra dữ liệu nhập hoặc backend.'
+        );
+
+        this.isSubmittingContainer = false;
+        this.changeDetectorRef.detectChanges();
+      },
+    });
+  }
+
+  validateContainerForm(): string {
+    if (!this.containerForm.containerNumber.trim()) {
       return 'Vui lòng nhập số container.';
     }
 
-    if (!this.addContainerForm.containerTypeId) {
+    if (!this.containerForm.containerTypeId) {
       return 'Vui lòng chọn loại container.';
     }
 
-    if (!this.addContainerForm.lineOperatorId) {
+    if (!this.containerForm.lineOperatorId) {
       return 'Vui lòng chọn hãng khai thác.';
     }
 
-    if (!this.addContainerForm.containerOwner.trim()) {
+    if (!this.containerForm.containerOwner.trim()) {
       return 'Vui lòng nhập chủ sở hữu container.';
     }
 
-    if (!this.addContainerForm.containerCondition.trim()) {
+    if (!this.containerForm.containerCondition.trim()) {
       return 'Vui lòng chọn tình trạng container.';
     }
 
     return '';
   }
 
-  resetAddContainerForm(): void {
-    this.addContainerForm = {
+  resetContainerForm(): void {
+    this.containerForm = {
       containerNumber: '',
       containerTypeId: null,
       lineOperatorId: null,
@@ -239,7 +344,7 @@ export class Containers implements OnInit {
       currentStatus: 'OutYard',
     };
 
-    this.addContainerErrorMessage = '';
+    this.containerFormErrorMessage = '';
   }
 
   getApiErrorMessage(error: any, fallbackMessage: string): string {
@@ -374,6 +479,14 @@ export class Containers implements OnInit {
     }
   }
 
+  applyFiltersAfterReload(): void {
+    this.applyFilters();
+
+    if (!this.selectedContainer && this.containers.length > 0) {
+      this.selectedContainer = this.containers[0];
+    }
+  }
+
   clearFilters(): void {
     this.searchKeyword = '';
     this.selectedStatus = 'All Status';
@@ -385,6 +498,24 @@ export class Containers implements OnInit {
 
   selectContainer(container: ContainerResponse): void {
     this.selectedContainer = container;
+  }
+
+  toDateInputValue(dateValue: string | null | undefined): string {
+    if (!dateValue) {
+      return '';
+    }
+
+    const date = new Date(dateValue);
+
+    if (Number.isNaN(date.getTime())) {
+      return dateValue.slice(0, 10);
+    }
+
+    const year = date.getFullYear();
+    const month = `${date.getMonth() + 1}`.padStart(2, '0');
+    const day = `${date.getDate()}`.padStart(2, '0');
+
+    return `${year}-${month}-${day}`;
   }
 
   formatWeight(weight: number | null | undefined): string {

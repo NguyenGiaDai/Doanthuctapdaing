@@ -42,3 +42,15 @@ export interface CreateContainerRequest {
   containerClassification: string | null;
   currentStatus: string | null;
 }
+
+export interface UpdateContainerRequest {
+  id: number;
+  containerNumber: string;
+  containerTypeId: number;
+  lineOperatorId: number;
+  dateOfManufacture: string | null;
+  containerOwner: string;
+  containerCondition: string;
+  containerClassification: string | null;
+  currentStatus: string | null;
+}
