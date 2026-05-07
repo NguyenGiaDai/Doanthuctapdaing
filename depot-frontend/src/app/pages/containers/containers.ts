@@ -272,26 +272,22 @@ export class Containers implements OnInit {
       next: (updatedContainer) => {
         console.log('Update container response:', updatedContainer);
 
+        const updatedId = this.editingContainerId;
+
         this.isSubmittingContainer = false;
         this.isContainerModalOpen = false;
-
-        const updatedId = this.editingContainerId;
         this.isEditMode = false;
         this.editingContainerId = null;
         this.resetContainerForm();
 
-        this.loadContainers();
-
-        if (updatedId) {
-          const selectedAfterUpdate = this.allContainers.find(
-            (container) => container.id === updatedId
-          );
-
-          if (selectedAfterUpdate) {
-            this.selectedContainer = selectedAfterUpdate;
-          }
+        if (updatedId && this.selectedContainer?.id === updatedId) {
+          this.selectedContainer = {
+            ...this.selectedContainer,
+            ...request,
+          };
         }
 
+        this.loadContainers();
         this.changeDetectorRef.detectChanges();
       },
       error: (error) => {
@@ -480,7 +476,20 @@ export class Containers implements OnInit {
   }
 
   applyFiltersAfterReload(): void {
+    const selectedContainerId = this.selectedContainer?.id;
+
     this.applyFilters();
+
+    if (selectedContainerId) {
+      const reloadedSelectedContainer = this.containers.find(
+        (container) => container.id === selectedContainerId
+      );
+
+      if (reloadedSelectedContainer) {
+        this.selectedContainer = reloadedSelectedContainer;
+        return;
+      }
+    }
 
     if (!this.selectedContainer && this.containers.length > 0) {
       this.selectedContainer = this.containers[0];
