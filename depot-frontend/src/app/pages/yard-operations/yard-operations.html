@@ -332,107 +332,156 @@
       </div>
 
       <form class="operation-form" (ngSubmit)="submitMove()">
+        <div *ngIf="isLoadingContainers" class="alert-message info">
+          Đang tải danh sách container...
+        </div>
+
+        <div *ngIf="isLoadingPositions" class="alert-message info">
+          Đang tải vị trí container...
+        </div>
+
+        <div *ngIf="moveSuccessMessage" class="alert-message success">
+          {{ moveSuccessMessage }}
+        </div>
+
+        <div *ngIf="moveErrorMessage" class="alert-message error">
+          {{ moveErrorMessage }}
+        </div>
+
+        <div class="form-grid">
+          <label class="full-width">
+            <span>Container cần di dời</span>
+            <select
+              name="moveContainerId"
+              [(ngModel)]="moveForm.containerId"
+              (ngModelChange)="onMoveContainerChanged()"
+              [disabled]="isMoveSubmitting || isLoadingContainers || isLoadingPositions"
+            >
+              <option [ngValue]="null">Chọn container</option>
+              <option *ngFor="let container of containers" [ngValue]="container.id">
+                {{ container.containerNumber }}
+                -
+                {{ container.containerTypeCode || 'N/A' }}
+                -
+                {{ container.lineOperatorCode || container.lineOperatorName || 'N/A' }}
+                -
+                {{ container.currentStatus || 'N/A' }}
+              </option>
+            </select>
+          </label>
+        </div>
+
+        <div class="move-position-layout">
+          <section class="position-section current-position-section">
+            <div class="position-section-header">
+              <div>
+                <p>VỊ TRÍ HIỆN TẠI</p>
+                <h3>Container đang nằm ở</h3>
+              </div>
+              <span class="position-status current">Hiện tại</span>
+            </div>
+
+            <div class="current-position-grid">
+              <div class="readonly-position-card">
+                <span>Block</span>
+                <strong>{{ moveForm.currentBlockId || '-' }}</strong>
+              </div>
+
+              <div class="readonly-position-card">
+                <span>Bay</span>
+                <strong>{{ moveForm.currentBay || '-' }}</strong>
+              </div>
+
+              <div class="readonly-position-card">
+                <span>Row</span>
+                <strong>{{ moveForm.currentRow || '-' }}</strong>
+              </div>
+
+              <div class="readonly-position-card">
+                <span>Tier</span>
+                <strong>{{ moveForm.currentTier || '-' }}</strong>
+              </div>
+            </div>
+
+            <p *ngIf="moveForm.containerId && !getSelectedMovePosition()" class="position-helper error">
+              Container này chưa có vị trí hiện tại trong bãi.
+            </p>
+
+            <p *ngIf="!moveForm.containerId" class="position-helper">
+              Chọn container để xem vị trí hiện tại.
+            </p>
+          </section>
+
+          <section class="position-section new-position-section">
+            <div class="position-section-header">
+              <div>
+                <p>VỊ TRÍ MỚI</p>
+                <h3>Chuyển container đến</h3>
+              </div>
+              <span class="position-status new">Mới</span>
+            </div>
+
+            <div class="form-grid compact-grid">
+              <label>
+                <span>Block mới</span>
+                <input
+                  type="number"
+                  name="moveNewBlockId"
+                  min="1"
+                  placeholder="Ví dụ: 2"
+                  [(ngModel)]="moveForm.newBlockId"
+                  [disabled]="isMoveSubmitting"
+                />
+              </label>
+
+              <label>
+                <span>Bay mới</span>
+                <input
+                  type="number"
+                  name="moveNewBay"
+                  min="1"
+                  placeholder="3"
+                  [(ngModel)]="moveForm.newBay"
+                  [disabled]="isMoveSubmitting"
+                />
+              </label>
+
+              <label>
+                <span>Row mới</span>
+                <input
+                  type="number"
+                  name="moveNewRow"
+                  min="1"
+                  placeholder="2"
+                  [(ngModel)]="moveForm.newRow"
+                  [disabled]="isMoveSubmitting"
+                />
+              </label>
+
+              <label>
+                <span>Tier mới</span>
+                <input
+                  type="number"
+                  name="moveNewTier"
+                  min="1"
+                  placeholder="1"
+                  [(ngModel)]="moveForm.newTier"
+                  [disabled]="isMoveSubmitting"
+                />
+              </label>
+            </div>
+          </section>
+        </div>
+
         <div class="form-grid">
           <label>
-            <span>Số container</span>
+            <span>Số xe / thiết bị</span>
             <input
               type="text"
-              name="moveContainerNumber"
-              placeholder="Ví dụ: TEMU1234565"
-              [(ngModel)]="moveForm.containerNumber"
-            />
-          </label>
-
-          <label>
-            <span>Position Id hiện tại</span>
-            <input
-              type="text"
-              name="moveCurrentPositionId"
-              placeholder="Ví dụ: 1"
-              [(ngModel)]="moveForm.currentPositionId"
-            />
-          </label>
-
-          <label>
-            <span>Block hiện tại</span>
-            <input
-              type="text"
-              name="moveCurrentBlock"
-              placeholder="Ví dụ: A01"
-              [(ngModel)]="moveForm.currentBlock"
-            />
-          </label>
-
-          <label>
-            <span>Bay hiện tại</span>
-            <input
-              type="number"
-              name="moveCurrentBay"
-              min="1"
-              [(ngModel)]="moveForm.currentBay"
-            />
-          </label>
-
-          <label>
-            <span>Row hiện tại</span>
-            <input
-              type="number"
-              name="moveCurrentRow"
-              min="1"
-              [(ngModel)]="moveForm.currentRow"
-            />
-          </label>
-
-          <label>
-            <span>Tier hiện tại</span>
-            <input
-              type="number"
-              name="moveCurrentTier"
-              min="1"
-              [(ngModel)]="moveForm.currentTier"
-            />
-          </label>
-
-          <label>
-            <span>Block mới</span>
-            <input
-              type="text"
-              name="moveNewBlock"
-              placeholder="Ví dụ: B02"
-              [(ngModel)]="moveForm.newBlock"
-            />
-          </label>
-
-          <label>
-            <span>Bay mới</span>
-            <input
-              type="number"
-              name="moveNewBay"
-              min="1"
-              placeholder="3"
-              [(ngModel)]="moveForm.newBay"
-            />
-          </label>
-
-          <label>
-            <span>Row mới</span>
-            <input
-              type="number"
-              name="moveNewRow"
-              min="1"
-              placeholder="2"
-              [(ngModel)]="moveForm.newRow"
-            />
-          </label>
-
-          <label>
-            <span>Tier mới</span>
-            <input
-              type="number"
-              name="moveNewTier"
-              min="1"
-              placeholder="1"
-              [(ngModel)]="moveForm.newTier"
+              name="moveVehicleNumber"
+              placeholder="Ví dụ: RTG-01"
+              [(ngModel)]="moveForm.vehicleNumber"
+              [disabled]="isMoveSubmitting"
             />
           </label>
 
@@ -442,6 +491,7 @@
               type="datetime-local"
               name="movePositionTime"
               [(ngModel)]="moveForm.positionTime"
+              [disabled]="isMoveSubmitting"
             />
           </label>
 
@@ -452,13 +502,18 @@
               rows="4"
               placeholder="Nhập ghi chú nếu có..."
               [(ngModel)]="moveForm.note"
+              [disabled]="isMoveSubmitting"
             ></textarea>
           </label>
         </div>
 
         <div class="form-actions">
-          <button type="submit" class="primary-button">
-            Xác nhận di dời
+          <button
+            type="submit"
+            class="primary-button"
+            [disabled]="isMoveSubmitting || isLoadingContainers || isLoadingPositions"
+          >
+            {{ isMoveSubmitting ? 'Đang di dời...' : 'Xác nhận di dời' }}
           </button>
         </div>
       </form>

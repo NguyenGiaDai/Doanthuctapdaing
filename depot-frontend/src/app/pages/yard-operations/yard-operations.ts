@@ -5,13 +5,19 @@ import { FormsModule } from '@angular/forms';
 import { ContainerResponse } from '../../models/container.model';
 import {
   ContainerTransactionResponse,
+  CreateContainerTransactionRequest,
   ExportContainerRequest,
   ImportContainerRequest,
 } from '../../models/container-transaction.model';
+import {
+  ContainerPositionResponse,
+  UpdateContainerPositionRequest,
+} from '../../models/container-position.model';
 import { DeliveryOrderResponse } from '../../models/delivery-order.model';
 
 import { ContainerService } from '../../services/container.service';
 import { ContainerTransactionService } from '../../services/container-transaction.service';
+import { ContainerPositionService } from '../../services/container-position.service';
 import { DeliveryOrderService } from '../../services/delivery-order.service';
 
 type YardOperationTab = 'import' | 'export' | 'move' | 'history';
@@ -38,9 +44,11 @@ export class YardOperations implements OnInit {
 
   containers: ContainerResponse[] = [];
   deliveryOrders: DeliveryOrderResponse[] = [];
+  containerPositions: ContainerPositionResponse[] = [];
 
   isLoadingContainers = false;
   isLoadingDeliveryOrders = false;
+  isLoadingPositions = false;
 
   isLoadingHistory = false;
   historyErrorMessage = '';
@@ -52,6 +60,10 @@ export class YardOperations implements OnInit {
   isExportSubmitting = false;
   exportSuccessMessage = '';
   exportErrorMessage = '';
+
+  isMoveSubmitting = false;
+  moveSuccessMessage = '';
+  moveErrorMessage = '';
 
   importForm = {
     containerId: null as number | null,
@@ -73,16 +85,17 @@ export class YardOperations implements OnInit {
   };
 
   moveForm = {
-    containerNumber: '',
-    currentPositionId: '',
-    currentBlock: '',
+    containerId: null as number | null,
+    currentPositionId: null as number | null,
+    currentBlockId: null as number | null,
     currentBay: null as number | null,
     currentRow: null as number | null,
     currentTier: null as number | null,
-    newBlock: '',
+    newBlockId: null as number | null,
     newBay: null as number | null,
     newRow: null as number | null,
     newTier: null as number | null,
+    vehicleNumber: '',
     positionTime: this.getCurrentDateTimeInputValue(),
     note: '',
   };
@@ -94,6 +107,7 @@ export class YardOperations implements OnInit {
   constructor(
     private readonly containerService: ContainerService,
     private readonly containerTransactionService: ContainerTransactionService,
+    private readonly containerPositionService: ContainerPositionService,
     private readonly deliveryOrderService: DeliveryOrderService,
     private readonly changeDetectorRef: ChangeDetectorRef
   ) {}
@@ -101,6 +115,7 @@ export class YardOperations implements OnInit {
   ngOnInit(): void {
     this.loadContainers();
     this.loadDeliveryOrders();
+    this.loadContainerPositions();
   }
 
   loadContainers(): void {
@@ -154,6 +169,29 @@ export class YardOperations implements OnInit {
     });
   }
 
+  loadContainerPositions(): void {
+    this.isLoadingPositions = true;
+    this.changeDetectorRef.detectChanges();
+
+    this.containerPositionService.getContainerPositions(1, 100).subscribe({
+      next: (response) => {
+        this.containerPositions = response.items ?? [];
+        this.isLoadingPositions = false;
+        this.changeDetectorRef.detectChanges();
+      },
+      error: (error) => {
+        console.error('Load container positions failed:', error);
+
+        this.moveErrorMessage =
+          'Không tải được danh sách vị trí container. Hãy kiểm tra backend Docker, proxy hoặc API ContainerPosition.';
+
+        this.containerPositions = [];
+        this.isLoadingPositions = false;
+        this.changeDetectorRef.detectChanges();
+      },
+    });
+  }
+
   loadTransactionHistory(): void {
     this.isLoadingHistory = true;
     this.historyErrorMessage = '';
@@ -201,6 +239,10 @@ export class YardOperations implements OnInit {
       this.loadDeliveryOrders();
     }
 
+    if (tab === 'move' && this.containerPositions.length === 0) {
+      this.loadContainerPositions();
+    }
+
     this.changeDetectorRef.detectChanges();
   }
 
@@ -243,6 +285,7 @@ export class YardOperations implements OnInit {
         this.changeDetectorRef.detectChanges();
 
         this.loadContainers();
+        this.loadContainerPositions();
       },
       error: (error) => {
         console.error('Import container failed:', error);
@@ -378,6 +421,7 @@ export class YardOperations implements OnInit {
         this.changeDetectorRef.detectChanges();
 
         this.loadContainers();
+        this.loadContainerPositions();
         this.loadTransactionHistory();
       },
       error: (error) => {
@@ -455,7 +499,193 @@ export class YardOperations implements OnInit {
   }
 
   submitMove(): void {
-    console.log('Move form:', this.moveForm);
+    this.moveSuccessMessage = '';
+    this.moveErrorMessage = '';
+
+    const validationMessage = this.validateMoveForm();
+
+    if (validationMessage) {
+      this.moveErrorMessage = validationMessage;
+      this.changeDetectorRef.detectChanges();
+      return;
+    }
+
+    const currentPosition = this.getSelectedMovePosition();
+
+    if (!currentPosition) {
+      this.moveErrorMessage =
+        'Không tìm thấy vị trí hiện tại của container. Hãy kiểm tra lại dữ liệu ContainerPosition.';
+      this.changeDetectorRef.detectChanges();
+      return;
+    }
+
+    const updatePositionRequest: UpdateContainerPositionRequest = {
+      containerId: this.moveForm.containerId as number,
+      blockId: this.moveForm.newBlockId as number,
+      bay: this.moveForm.newBay as number,
+      row: this.moveForm.newRow as number,
+      tier: this.moveForm.newTier as number,
+      positionTime: this.moveForm.positionTime || null,
+    };
+
+    const createTransactionRequest: CreateContainerTransactionRequest = {
+      containerId: this.moveForm.containerId as number,
+      transactionType: 'Move',
+
+      fromBlockId: currentPosition.blockId,
+      fromBay: currentPosition.bay,
+      fromRow: currentPosition.row,
+      fromTier: currentPosition.tier,
+
+      toBlockId: this.moveForm.newBlockId as number,
+      toBay: this.moveForm.newBay as number,
+      toRow: this.moveForm.newRow as number,
+      toTier: this.moveForm.newTier as number,
+
+      vehicleNumber: this.moveForm.vehicleNumber.trim() || null,
+      transactionTime: this.moveForm.positionTime || null,
+      note: this.moveForm.note.trim() || null,
+    };
+
+    this.isMoveSubmitting = true;
+    this.changeDetectorRef.detectChanges();
+
+    this.containerPositionService
+      .updateContainerPosition(currentPosition.id, updatePositionRequest)
+      .subscribe({
+        next: () => {
+          this.containerTransactionService.createTransaction(createTransactionRequest).subscribe({
+            next: (transactionId) => {
+              console.log('Move container success. Transaction id:', transactionId);
+
+              this.moveSuccessMessage = `Di dời container thành công. Mã giao dịch: ${transactionId}.`;
+              this.moveErrorMessage = '';
+
+              this.resetMoveForm();
+
+              this.isMoveSubmitting = false;
+              this.changeDetectorRef.detectChanges();
+
+              this.loadContainerPositions();
+              this.loadTransactionHistory();
+            },
+            error: (error) => {
+              console.error('Create move transaction failed:', error);
+
+              this.moveErrorMessage = this.getApiErrorMessage(
+                error,
+                'Đã cập nhật vị trí nhưng không ghi được lịch sử di dời. Hãy kiểm tra API ContainerTransaction.'
+              );
+
+              this.moveSuccessMessage = '';
+              this.isMoveSubmitting = false;
+              this.changeDetectorRef.detectChanges();
+
+              this.loadContainerPositions();
+            },
+          });
+        },
+        error: (error) => {
+          console.error('Move container failed:', error);
+
+          this.moveErrorMessage = this.getApiErrorMessage(
+            error,
+            'Không di dời được container. Hãy kiểm tra vị trí mới hoặc quy tắc không trùng vị trí.'
+          );
+
+          this.moveSuccessMessage = '';
+          this.isMoveSubmitting = false;
+          this.changeDetectorRef.detectChanges();
+        },
+      });
+  }
+
+  validateMoveForm(): string {
+    if (!this.moveForm.containerId) {
+      return 'Vui lòng chọn container cần di dời.';
+    }
+
+    const selectedContainer = this.getSelectedMoveContainer();
+
+    if (selectedContainer?.currentStatus !== 'InYard') {
+      return 'Container phải đang ở trong bãi mới được di dời.';
+    }
+
+    if (!this.getSelectedMovePosition()) {
+      return 'Container chưa có vị trí hiện tại trong bãi.';
+    }
+
+    if (this.isEmptyNumber(this.moveForm.newBlockId)) {
+      return 'Vui lòng nhập Block mới.';
+    }
+
+    if ((this.moveForm.newBlockId as number) <= 0) {
+      return 'Block mới phải lớn hơn 0.';
+    }
+
+    if (this.isEmptyNumber(this.moveForm.newBay)) {
+      return 'Vui lòng nhập Bay mới.';
+    }
+
+    if ((this.moveForm.newBay as number) <= 0) {
+      return 'Bay mới phải lớn hơn 0.';
+    }
+
+    if (this.isEmptyNumber(this.moveForm.newRow)) {
+      return 'Vui lòng nhập Row mới.';
+    }
+
+    if ((this.moveForm.newRow as number) <= 0) {
+      return 'Row mới phải lớn hơn 0.';
+    }
+
+    if (this.isEmptyNumber(this.moveForm.newTier)) {
+      return 'Vui lòng nhập Tier mới.';
+    }
+
+    if ((this.moveForm.newTier as number) <= 0) {
+      return 'Tier mới phải lớn hơn 0.';
+    }
+
+    return '';
+  }
+
+  resetMoveForm(): void {
+    this.moveForm = {
+      containerId: null,
+      currentPositionId: null,
+      currentBlockId: null,
+      currentBay: null,
+      currentRow: null,
+      currentTier: null,
+      newBlockId: null,
+      newBay: null,
+      newRow: null,
+      newTier: null,
+      vehicleNumber: '',
+      positionTime: this.getCurrentDateTimeInputValue(),
+      note: '',
+    };
+  }
+
+  onMoveContainerChanged(): void {
+    const currentPosition = this.getSelectedMovePosition();
+
+    this.moveForm.currentPositionId = currentPosition?.id ?? null;
+    this.moveForm.currentBlockId = currentPosition?.blockId ?? null;
+    this.moveForm.currentBay = currentPosition?.bay ?? null;
+    this.moveForm.currentRow = currentPosition?.row ?? null;
+    this.moveForm.currentTier = currentPosition?.tier ?? null;
+
+    this.moveForm.newBlockId = currentPosition?.blockId ?? null;
+    this.moveForm.newBay = currentPosition?.bay ?? null;
+    this.moveForm.newRow = currentPosition?.row ?? null;
+    this.moveForm.newTier = currentPosition?.tier ?? null;
+
+    this.moveSuccessMessage = '';
+    this.moveErrorMessage = '';
+
+    this.changeDetectorRef.detectChanges();
   }
 
   getSelectedImportContainer(): ContainerResponse | undefined {
@@ -472,6 +702,24 @@ export class YardOperations implements OnInit {
     }
 
     return this.containers.find((container) => container.id === this.exportForm.containerId);
+  }
+
+  getSelectedMoveContainer(): ContainerResponse | undefined {
+    if (!this.moveForm.containerId) {
+      return undefined;
+    }
+
+    return this.containers.find((container) => container.id === this.moveForm.containerId);
+  }
+
+  getSelectedMovePosition(): ContainerPositionResponse | undefined {
+    if (!this.moveForm.containerId) {
+      return undefined;
+    }
+
+    return this.containerPositions.find(
+      (position) => position.containerId === this.moveForm.containerId
+    );
   }
 
   getSelectedDeliveryOrder(): DeliveryOrderResponse | undefined {
@@ -725,12 +973,20 @@ export class YardOperations implements OnInit {
     return message
       .replace(/ToBlockId/g, 'Block')
       .replace(/toBlockId/g, 'Block')
+      .replace(/BlockId/g, 'Block')
+      .replace(/blockId/g, 'Block')
       .replace(/ToBay/g, 'Bay')
       .replace(/toBay/g, 'Bay')
+      .replace(/Bay/g, 'Bay')
+      .replace(/bay/g, 'Bay')
       .replace(/ToRow/g, 'Row')
       .replace(/toRow/g, 'Row')
+      .replace(/Row/g, 'Row')
+      .replace(/row/g, 'Row')
       .replace(/ToTier/g, 'Tier')
       .replace(/toTier/g, 'Tier')
+      .replace(/Tier/g, 'Tier')
+      .replace(/tier/g, 'Tier')
       .replace(/containerId/g, 'container')
       .replace(/ContainerId/g, 'container')
       .replace(/deliveryOrderId/g, 'Delivery Order')
