@@ -200,6 +200,10 @@
           Đang tải danh sách container...
         </div>
 
+        <div *ngIf="isLoadingDeliveryOrders" class="alert-message info">
+          Đang tải danh sách Delivery Order...
+        </div>
+
         <div *ngIf="exportSuccessMessage" class="alert-message success">
           {{ exportSuccessMessage }}
         </div>
@@ -214,6 +218,7 @@
             <select
               name="exportContainerId"
               [(ngModel)]="exportForm.containerId"
+              (ngModelChange)="onExportContainerChanged()"
               [disabled]="isExportSubmitting || isLoadingContainers"
             >
               <option [ngValue]="null">Chọn container</option>
@@ -230,15 +235,29 @@
           </label>
 
           <label>
-            <span>Delivery Order Id</span>
-            <input
-              type="number"
+            <span>Delivery Order</span>
+            <select
               name="exportDeliveryOrderId"
-              min="1"
-              placeholder="Ví dụ: 1"
               [(ngModel)]="exportForm.deliveryOrderId"
-              [disabled]="isExportSubmitting"
-            />
+              [disabled]="
+                isExportSubmitting ||
+                isLoadingDeliveryOrders ||
+                !exportForm.containerId ||
+                getFilteredDeliveryOrders().length === 0
+              "
+            >
+              <option [ngValue]="null">
+                {{
+                  exportForm.containerId
+                    ? 'Chọn Delivery Order'
+                    : 'Chọn container trước'
+                }}
+              </option>
+
+              <option *ngFor="let order of getFilteredDeliveryOrders()" [ngValue]="order.id">
+                {{ getDeliveryOrderDisplayText(order) }}
+              </option>
+            </select>
           </label>
 
           <label>
@@ -274,11 +293,27 @@
           </label>
         </div>
 
+        <div
+          *ngIf="
+            exportForm.containerId &&
+            !isLoadingDeliveryOrders &&
+            getFilteredDeliveryOrders().length === 0
+          "
+          class="alert-message error"
+        >
+          Không có Delivery Order phù hợp với container đã chọn hoặc Delivery Order đã hết hạn.
+        </div>
+
         <div class="form-actions">
           <button
             type="submit"
             class="primary-button"
-            [disabled]="isExportSubmitting || isLoadingContainers"
+            [disabled]="
+              isExportSubmitting ||
+              isLoadingContainers ||
+              isLoadingDeliveryOrders ||
+              getFilteredDeliveryOrders().length === 0
+            "
           >
             {{ isExportSubmitting ? 'Đang xuất bãi...' : 'Xác nhận xuất bãi' }}
           </button>

@@ -8,9 +8,11 @@ import {
   ExportContainerRequest,
   ImportContainerRequest,
 } from '../../models/container-transaction.model';
+import { DeliveryOrderResponse } from '../../models/delivery-order.model';
 
 import { ContainerService } from '../../services/container.service';
 import { ContainerTransactionService } from '../../services/container-transaction.service';
+import { DeliveryOrderService } from '../../services/delivery-order.service';
 
 type YardOperationTab = 'import' | 'export' | 'move' | 'history';
 
@@ -35,7 +37,10 @@ export class YardOperations implements OnInit {
   activeTab: YardOperationTab = 'import';
 
   containers: ContainerResponse[] = [];
+  deliveryOrders: DeliveryOrderResponse[] = [];
+
   isLoadingContainers = false;
+  isLoadingDeliveryOrders = false;
 
   isLoadingHistory = false;
   historyErrorMessage = '';
@@ -89,11 +94,13 @@ export class YardOperations implements OnInit {
   constructor(
     private readonly containerService: ContainerService,
     private readonly containerTransactionService: ContainerTransactionService,
+    private readonly deliveryOrderService: DeliveryOrderService,
     private readonly changeDetectorRef: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
     this.loadContainers();
+    this.loadDeliveryOrders();
   }
 
   loadContainers(): void {
@@ -119,6 +126,29 @@ export class YardOperations implements OnInit {
 
         this.loadTransactionHistory();
 
+        this.changeDetectorRef.detectChanges();
+      },
+    });
+  }
+
+  loadDeliveryOrders(): void {
+    this.isLoadingDeliveryOrders = true;
+    this.changeDetectorRef.detectChanges();
+
+    this.deliveryOrderService.getDeliveryOrders(1, 100).subscribe({
+      next: (response) => {
+        this.deliveryOrders = response.items ?? [];
+        this.isLoadingDeliveryOrders = false;
+        this.changeDetectorRef.detectChanges();
+      },
+      error: (error) => {
+        console.error('Load delivery orders failed:', error);
+
+        this.exportErrorMessage =
+          'Không tải được danh sách Delivery Order. Hãy kiểm tra backend Docker, proxy hoặc API DeliveryOrder.';
+
+        this.deliveryOrders = [];
+        this.isLoadingDeliveryOrders = false;
         this.changeDetectorRef.detectChanges();
       },
     });
@@ -165,6 +195,10 @@ export class YardOperations implements OnInit {
 
     if (tab === 'history') {
       this.loadTransactionHistory();
+    }
+
+    if (tab === 'export' && this.deliveryOrders.length === 0) {
+      this.loadDeliveryOrders();
     }
 
     this.changeDetectorRef.detectChanges();
@@ -344,6 +378,7 @@ export class YardOperations implements OnInit {
         this.changeDetectorRef.detectChanges();
 
         this.loadContainers();
+        this.loadTransactionHistory();
       },
       error: (error) => {
         console.error('Export container failed:', error);
@@ -372,11 +407,31 @@ export class YardOperations implements OnInit {
     }
 
     if (this.isEmptyNumber(this.exportForm.deliveryOrderId)) {
-      return 'Vui lòng nhập Delivery Order Id.';
+      return 'Vui lòng chọn Delivery Order.';
     }
 
-    if ((this.exportForm.deliveryOrderId as number) <= 0) {
-      return 'Delivery Order Id phải lớn hơn 0.';
+    const selectedDeliveryOrder = this.getSelectedDeliveryOrder();
+
+    if (!selectedDeliveryOrder) {
+      return 'Delivery Order không tồn tại trong danh sách.';
+    }
+
+    if (this.isDeliveryOrderExpired(selectedDeliveryOrder)) {
+      return 'Delivery Order đã hết hạn, không thể xuất container.';
+    }
+
+    if (
+      selectedContainer &&
+      selectedDeliveryOrder.lineOperatorId !== selectedContainer.lineOperatorId
+    ) {
+      return 'Delivery Order không cùng hãng khai thác với container.';
+    }
+
+    if (
+      selectedContainer &&
+      selectedDeliveryOrder.containerTypeId !== selectedContainer.containerTypeId
+    ) {
+      return 'Delivery Order không đúng loại container.';
     }
 
     return '';
@@ -390,6 +445,13 @@ export class YardOperations implements OnInit {
       transactionTime: this.getCurrentDateTimeInputValue(),
       note: '',
     };
+  }
+
+  onExportContainerChanged(): void {
+    this.exportForm.deliveryOrderId = null;
+    this.exportSuccessMessage = '';
+    this.exportErrorMessage = '';
+    this.changeDetectorRef.detectChanges();
   }
 
   submitMove(): void {
@@ -410,6 +472,38 @@ export class YardOperations implements OnInit {
     }
 
     return this.containers.find((container) => container.id === this.exportForm.containerId);
+  }
+
+  getSelectedDeliveryOrder(): DeliveryOrderResponse | undefined {
+    if (!this.exportForm.deliveryOrderId) {
+      return undefined;
+    }
+
+    return this.deliveryOrders.find((order) => order.id === this.exportForm.deliveryOrderId);
+  }
+
+  getFilteredDeliveryOrders(): DeliveryOrderResponse[] {
+    const selectedContainer = this.getSelectedExportContainer();
+
+    if (!selectedContainer) {
+      return this.deliveryOrders.filter((order) => !this.isDeliveryOrderExpired(order));
+    }
+
+    return this.deliveryOrders.filter((order) => {
+      return (
+        order.lineOperatorId === selectedContainer.lineOperatorId &&
+        order.containerTypeId === selectedContainer.containerTypeId &&
+        !this.isDeliveryOrderExpired(order)
+      );
+    });
+  }
+
+  getDeliveryOrderDisplayText(order: DeliveryOrderResponse): string {
+    const expiryDate = this.formatDateForDisplay(order.expiryDate);
+    const lineOperator = order.lineOperatorName || `Line ${order.lineOperatorId}`;
+    const containerType = order.containerTypeName || `Type ${order.containerTypeId}`;
+
+    return `${order.doNumber} - ${lineOperator} - ${containerType} - Hạn: ${expiryDate}`;
   }
 
   getApiErrorMessage(error: any, fallbackMessage: string): string {
@@ -589,6 +683,42 @@ export class YardOperations implements OnInit {
 
   private isEmptyNumber(value: number | null): boolean {
     return value === null || value === undefined;
+  }
+
+  private isDeliveryOrderExpired(order: DeliveryOrderResponse): boolean {
+    if (!order.expiryDate) {
+      return false;
+    }
+
+    const expiryDate = new Date(order.expiryDate);
+    const today = new Date();
+
+    expiryDate.setHours(23, 59, 59, 999);
+    today.setHours(0, 0, 0, 0);
+
+    if (Number.isNaN(expiryDate.getTime())) {
+      return false;
+    }
+
+    return expiryDate < today;
+  }
+
+  private formatDateForDisplay(dateValue: string | null): string {
+    if (!dateValue) {
+      return '-';
+    }
+
+    const date = new Date(dateValue);
+
+    if (Number.isNaN(date.getTime())) {
+      return dateValue;
+    }
+
+    const day = `${date.getDate()}`.padStart(2, '0');
+    const month = `${date.getMonth() + 1}`.padStart(2, '0');
+    const year = date.getFullYear();
+
+    return `${day}/${month}/${year}`;
   }
 
   private normalizeApiErrorMessage(message: string): string {
