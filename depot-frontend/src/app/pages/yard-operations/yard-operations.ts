@@ -77,7 +77,9 @@ export class YardOperations implements OnInit {
     note: '',
   };
 
+  allHistoryItems: YardOperationHistoryItem[] = [];
   historyItems: YardOperationHistoryItem[] = [];
+  historySearchKeyword = '';
 
   constructor(
     private readonly containerService: ContainerService,
@@ -126,7 +128,7 @@ export class YardOperations implements OnInit {
       next: (response) => {
         const transactions = response.items ?? [];
 
-        this.historyItems = transactions
+        this.allHistoryItems = transactions
           .sort((firstTransaction, secondTransaction) => {
             const firstTime = this.getTransactionTimeValue(firstTransaction.transactionTime);
             const secondTime = this.getTransactionTimeValue(secondTransaction.transactionTime);
@@ -135,6 +137,7 @@ export class YardOperations implements OnInit {
           })
           .map((transaction) => this.mapTransactionToHistoryItem(transaction));
 
+        this.applyHistorySearch();
         this.isLoadingHistory = false;
         this.changeDetectorRef.detectChanges();
       },
@@ -144,6 +147,7 @@ export class YardOperations implements OnInit {
         this.historyErrorMessage =
           'Không tải được lịch sử container. Hãy kiểm tra backend Docker, proxy hoặc API ContainerTransaction.';
 
+        this.allHistoryItems = [];
         this.historyItems = [];
         this.isLoadingHistory = false;
         this.changeDetectorRef.detectChanges();
@@ -267,6 +271,35 @@ export class YardOperations implements OnInit {
       transactionTime: this.getCurrentDateTimeInputValue(),
       note: '',
     };
+  }
+  applyHistorySearch(): void {
+    const keyword = this.historySearchKeyword.trim().toLowerCase();
+
+    if (!keyword) {
+      this.historyItems = [...this.allHistoryItems];
+      this.changeDetectorRef.detectChanges();
+      return;
+    }
+
+    this.historyItems = this.allHistoryItems.filter((item) => {
+      return (
+        item.id.toLowerCase().includes(keyword) ||
+        item.containerNumber.toLowerCase().includes(keyword) ||
+        item.transactionType.toLowerCase().includes(keyword) ||
+        item.fromPosition.toLowerCase().includes(keyword) ||
+        item.toPosition.toLowerCase().includes(keyword) ||
+        item.vehicleNumber.toLowerCase().includes(keyword) ||
+        item.transactionTime.toLowerCase().includes(keyword) ||
+        item.note.toLowerCase().includes(keyword)
+      );
+    });
+
+    this.changeDetectorRef.detectChanges();
+  }
+
+  clearHistorySearch(): void {
+    this.historySearchKeyword = '';
+    this.applyHistorySearch();
   }
 
   submitExport(): void {

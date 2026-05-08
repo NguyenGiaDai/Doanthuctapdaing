@@ -407,7 +407,29 @@
 
         <span class="record-count">{{ historyItems.length }} giao dịch</span>
       </div>
+      <div *ngIf="isLoadingHistory" class="alert-message info">
+        Đang tải lịch sử container...
+      </div>
 
+      <div *ngIf="historyErrorMessage" class="alert-message error">
+        {{ historyErrorMessage }}
+      </div>
+
+      <div class="history-search-card">
+        <label>
+          <span>Tìm kiếm lịch sử</span>
+          <input
+            type="text"
+            placeholder="Nhập số container, loại giao dịch, vị trí, số xe, ghi chú..."
+            [(ngModel)]="historySearchKeyword"
+            (input)="applyHistorySearch()"
+          />
+        </label>
+
+        <button type="button" class="secondary-button" (click)="clearHistorySearch()">
+          Đặt lại
+        </button>
+      </div>
       <div class="history-table-wrap">
         <table class="history-table">
           <thead>
@@ -439,6 +461,11 @@
             <td>{{ item.vehicleNumber || '-' }}</td>
             <td>{{ item.transactionTime }}</td>
             <td>{{ item.note || '-' }}</td>
+          </tr>
+          <tr *ngIf="!isLoadingHistory && historyItems.length === 0">
+            <td colspan="8" class="empty-history-cell">
+              Không tìm thấy lịch sử container phù hợp.
+            </td>
           </tr>
           </tbody>
         </table>
