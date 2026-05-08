@@ -4,6 +4,7 @@ import { Observable } from 'rxjs';
 
 import {
   ContainerTransactionResponse,
+  ExportContainerRequest,
   ImportContainerRequest,
 } from '../models/container-transaction.model';
 
@@ -33,5 +34,8 @@ export class ContainerTransactionService {
 
   importContainer(request: ImportContainerRequest): Observable<number> {
     return this.http.post<number>(`${this.apiUrl}/import`, request);
+  }
+  exportContainer(request: ExportContainerRequest): Observable<number> {
+    return this.http.post<number>(`${this.apiUrl}/export`, request);
   }
 }

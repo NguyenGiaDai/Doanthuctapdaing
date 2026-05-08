@@ -196,24 +196,48 @@
       </div>
 
       <form class="operation-form" (ngSubmit)="submitExport()">
+        <div *ngIf="isLoadingContainers" class="alert-message info">
+          Đang tải danh sách container...
+        </div>
+
+        <div *ngIf="exportSuccessMessage" class="alert-message success">
+          {{ exportSuccessMessage }}
+        </div>
+
+        <div *ngIf="exportErrorMessage" class="alert-message error">
+          {{ exportErrorMessage }}
+        </div>
+
         <div class="form-grid">
           <label>
-            <span>Số container</span>
-            <input
-              type="text"
-              name="exportContainerNumber"
-              placeholder="Ví dụ: CMAU1234564"
-              [(ngModel)]="exportForm.containerNumber"
-            />
+            <span>Container cần xuất bãi</span>
+            <select
+              name="exportContainerId"
+              [(ngModel)]="exportForm.containerId"
+              [disabled]="isExportSubmitting || isLoadingContainers"
+            >
+              <option [ngValue]="null">Chọn container</option>
+              <option *ngFor="let container of containers" [ngValue]="container.id">
+                {{ container.containerNumber }}
+                -
+                {{ container.containerTypeCode || 'N/A' }}
+                -
+                {{ container.lineOperatorCode || container.lineOperatorName || 'N/A' }}
+                -
+                {{ container.currentStatus || 'N/A' }}
+              </option>
+            </select>
           </label>
 
           <label>
-            <span>Số lệnh giao container</span>
+            <span>Delivery Order Id</span>
             <input
-              type="text"
-              name="exportDeliveryOrderNumber"
-              placeholder="Ví dụ: DO-2026-001"
-              [(ngModel)]="exportForm.deliveryOrderNumber"
+              type="number"
+              name="exportDeliveryOrderId"
+              min="1"
+              placeholder="Ví dụ: 1"
+              [(ngModel)]="exportForm.deliveryOrderId"
+              [disabled]="isExportSubmitting"
             />
           </label>
 
@@ -224,6 +248,7 @@
               name="exportVehicleNumber"
               placeholder="Ví dụ: 51D-67890"
               [(ngModel)]="exportForm.vehicleNumber"
+              [disabled]="isExportSubmitting"
             />
           </label>
 
@@ -233,6 +258,7 @@
               type="datetime-local"
               name="exportTransactionTime"
               [(ngModel)]="exportForm.transactionTime"
+              [disabled]="isExportSubmitting"
             />
           </label>
 
@@ -243,13 +269,18 @@
               rows="4"
               placeholder="Nhập ghi chú nếu có..."
               [(ngModel)]="exportForm.note"
+              [disabled]="isExportSubmitting"
             ></textarea>
           </label>
         </div>
 
         <div class="form-actions">
-          <button type="submit" class="primary-button">
-            Xác nhận xuất bãi
+          <button
+            type="submit"
+            class="primary-button"
+            [disabled]="isExportSubmitting || isLoadingContainers"
+          >
+            {{ isExportSubmitting ? 'Đang xuất bãi...' : 'Xác nhận xuất bãi' }}
           </button>
         </div>
       </form>

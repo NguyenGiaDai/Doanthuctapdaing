@@ -8,6 +8,13 @@ export interface ImportContainerRequest {
   transactionTime: string | null;
   note: string | null;
 }
+export interface ExportContainerRequest {
+  containerId: number;
+  deliveryOrderId: number;
+  vehicleNumber: string | null;
+  transactionTime: string | null;
+  note: string | null;
+}
 
 export interface ContainerTransactionResponse {
   id: number;

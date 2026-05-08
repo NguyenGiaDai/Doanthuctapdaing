@@ -5,6 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { ContainerResponse } from '../../models/container.model';
 import {
   ContainerTransactionResponse,
+  ExportContainerRequest,
   ImportContainerRequest,
 } from '../../models/container-transaction.model';
 
@@ -43,6 +44,10 @@ export class YardOperations implements OnInit {
   importSuccessMessage = '';
   importErrorMessage = '';
 
+  isExportSubmitting = false;
+  exportSuccessMessage = '';
+  exportErrorMessage = '';
+
   importForm = {
     containerId: null as number | null,
     toBlockId: null as number | null,
@@ -55,8 +60,8 @@ export class YardOperations implements OnInit {
   };
 
   exportForm = {
-    containerNumber: '',
-    deliveryOrderNumber: '',
+    containerId: null as number | null,
+    deliveryOrderId: null as number | null,
     vehicleNumber: '',
     transactionTime: this.getCurrentDateTimeInputValue(),
     note: '',
@@ -272,6 +277,7 @@ export class YardOperations implements OnInit {
       note: '',
     };
   }
+
   applyHistorySearch(): void {
     const keyword = this.historySearchKeyword.trim().toLowerCase();
 
@@ -303,7 +309,87 @@ export class YardOperations implements OnInit {
   }
 
   submitExport(): void {
-    console.log('Export form:', this.exportForm);
+    this.exportSuccessMessage = '';
+    this.exportErrorMessage = '';
+
+    const validationMessage = this.validateExportForm();
+
+    if (validationMessage) {
+      this.exportErrorMessage = validationMessage;
+      this.changeDetectorRef.detectChanges();
+      return;
+    }
+
+    const request: ExportContainerRequest = {
+      containerId: this.exportForm.containerId as number,
+      deliveryOrderId: this.exportForm.deliveryOrderId as number,
+      vehicleNumber: this.exportForm.vehicleNumber.trim() || null,
+      transactionTime: this.exportForm.transactionTime || null,
+      note: this.exportForm.note.trim() || null,
+    };
+
+    this.isExportSubmitting = true;
+    this.changeDetectorRef.detectChanges();
+
+    this.containerTransactionService.exportContainer(request).subscribe({
+      next: (transactionId) => {
+        console.log('Export container success. Transaction id:', transactionId);
+
+        this.exportSuccessMessage = `Xuất bãi thành công. Mã giao dịch: ${transactionId}.`;
+        this.exportErrorMessage = '';
+
+        this.resetExportForm();
+
+        this.isExportSubmitting = false;
+        this.changeDetectorRef.detectChanges();
+
+        this.loadContainers();
+      },
+      error: (error) => {
+        console.error('Export container failed:', error);
+
+        this.exportErrorMessage = this.getApiErrorMessage(
+          error,
+          'Không xuất được container. Hãy kiểm tra container, Delivery Order hoặc quy tắc nghiệp vụ.'
+        );
+
+        this.exportSuccessMessage = '';
+        this.isExportSubmitting = false;
+        this.changeDetectorRef.detectChanges();
+      },
+    });
+  }
+
+  validateExportForm(): string {
+    if (!this.exportForm.containerId) {
+      return 'Vui lòng chọn container cần xuất bãi.';
+    }
+
+    const selectedContainer = this.getSelectedExportContainer();
+
+    if (selectedContainer?.currentStatus !== 'InYard') {
+      return 'Container phải đang ở trong bãi mới được xuất.';
+    }
+
+    if (this.isEmptyNumber(this.exportForm.deliveryOrderId)) {
+      return 'Vui lòng nhập Delivery Order Id.';
+    }
+
+    if ((this.exportForm.deliveryOrderId as number) <= 0) {
+      return 'Delivery Order Id phải lớn hơn 0.';
+    }
+
+    return '';
+  }
+
+  resetExportForm(): void {
+    this.exportForm = {
+      containerId: null,
+      deliveryOrderId: null,
+      vehicleNumber: '',
+      transactionTime: this.getCurrentDateTimeInputValue(),
+      note: '',
+    };
   }
 
   submitMove(): void {
@@ -316,6 +402,14 @@ export class YardOperations implements OnInit {
     }
 
     return this.containers.find((container) => container.id === this.importForm.containerId);
+  }
+
+  getSelectedExportContainer(): ContainerResponse | undefined {
+    if (!this.exportForm.containerId) {
+      return undefined;
+    }
+
+    return this.containers.find((container) => container.id === this.exportForm.containerId);
   }
 
   getApiErrorMessage(error: any, fallbackMessage: string): string {
@@ -508,7 +602,9 @@ export class YardOperations implements OnInit {
       .replace(/ToTier/g, 'Tier')
       .replace(/toTier/g, 'Tier')
       .replace(/containerId/g, 'container')
-      .replace(/ContainerId/g, 'container');
+      .replace(/ContainerId/g, 'container')
+      .replace(/deliveryOrderId/g, 'Delivery Order')
+      .replace(/DeliveryOrderId/g, 'Delivery Order');
   }
 
   private getCurrentDateTimeInputValue(): string {
