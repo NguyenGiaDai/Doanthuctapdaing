@@ -83,11 +83,16 @@ public class ContainerService(IUnitOfWork unitOfWork, IMapper mapper) : IContain
         if (isExist)
             throw new UserFriendlyException(ErrorCode.Conflict, "Container number already exists");
 
-        var containerTypeExists = await _unitOfWork.ContainerTypeRepository.AnyAsync(
+        var containerType = await _unitOfWork.ContainerTypeRepository.FirstOrDefaultAsync(
             x => x.Id == request.ContainerTypeId);
 
-        if (!containerTypeExists)
+        if (containerType == null)
             throw new UserFriendlyException(ErrorCode.NotFound, "Container type not found");
+
+        ValidateContainerTypeAndClassification(
+            request.ContainerNumber,
+            containerType.ContainerTypeName,
+            request.ContainerClassification);
 
         var lineOperatorExists = await _unitOfWork.LineOperatorRepository.AnyAsync(
             x => x.Id == request.LineOperatorId);
@@ -97,6 +102,7 @@ public class ContainerService(IUnitOfWork unitOfWork, IMapper mapper) : IContain
 
         var container = _mapper.Map<Container>(request);
         container.ContainerNumber = request.ContainerNumber.Trim();
+        container.ContainerClassification = request.ContainerClassification?.Trim().ToUpper();
 
         await _unitOfWork.ExecuteTransactionAsync(async () =>
             await _unitOfWork.ContainerRepository.AddAsync(container), token);
@@ -133,11 +139,16 @@ public class ContainerService(IUnitOfWork unitOfWork, IMapper mapper) : IContain
         if (isDuplicate)
             throw new UserFriendlyException(ErrorCode.Conflict, "Container number already exists");
 
-        var containerTypeExists = await _unitOfWork.ContainerTypeRepository.AnyAsync(
+        var containerType = await _unitOfWork.ContainerTypeRepository.FirstOrDefaultAsync(
             x => x.Id == request.ContainerTypeId);
 
-        if (!containerTypeExists)
+        if (containerType == null)
             throw new UserFriendlyException(ErrorCode.NotFound, "Container type not found");
+
+        ValidateContainerTypeAndClassification(
+            request.ContainerNumber,
+            containerType.ContainerTypeName,
+            request.ContainerClassification);
 
         var lineOperatorExists = await _unitOfWork.LineOperatorRepository.AnyAsync(
             x => x.Id == request.LineOperatorId);
@@ -151,7 +162,7 @@ public class ContainerService(IUnitOfWork unitOfWork, IMapper mapper) : IContain
         container.DateOfManufacture = request.DateOfManufacture;
         container.ContainerOwner = request.ContainerOwner;
         container.ContainerCondition = request.ContainerCondition;
-        container.ContainerClassification = request.ContainerClassification;
+        container.ContainerClassification = request.ContainerClassification?.Trim().ToUpper();
         container.CurrentStatus = request.CurrentStatus;
 
         await _unitOfWork.ExecuteTransactionAsync(() =>
@@ -204,6 +215,77 @@ public class ContainerService(IUnitOfWork unitOfWork, IMapper mapper) : IContain
     {
         var allowedTypeCodes = new[] { 'U', 'R', 'S', 'F', 'B', 'V', 'P' };
         return allowedTypeCodes.Contains(char.ToUpper(typeCode));
+    }
+
+    private static void ValidateContainerTypeAndClassification(
+        string containerNumber,
+        string containerTypeName,
+        string? containerClassification)
+    {
+        var typeCode = char.ToUpper(containerNumber.Trim()[3]);
+        var expectedTypeCode = GetExpectedTypeCodeByContainerTypeName(containerTypeName);
+
+        if (expectedTypeCode == null)
+            throw new UserFriendlyException(
+                ErrorCode.BadRequest,
+                $"Unsupported container type name: {containerTypeName}. Please use one of: Dry, Reefer, Open Top, Flat Rack, Bunker, Ventilated, Specialized.");
+
+        if (typeCode != expectedTypeCode.Value)
+            throw new UserFriendlyException(
+                ErrorCode.BadRequest,
+                $"Container number type code does not match selected container type. Expected type code {expectedTypeCode.Value} for {containerTypeName}.");
+
+        var expectedClassification = GetExpectedClassificationByTypeCode(typeCode);
+        var actualClassification = containerClassification?.Trim().ToUpper();
+
+        if (string.IsNullOrWhiteSpace(actualClassification))
+            throw new UserFriendlyException(
+                ErrorCode.BadRequest,
+                "Container classification is required.");
+
+        if (actualClassification != expectedClassification)
+            throw new UserFriendlyException(
+                ErrorCode.BadRequest,
+                $"Container classification does not match container type code. Type code {typeCode} must use classification {expectedClassification}.");
+    }
+
+    private static char? GetExpectedTypeCodeByContainerTypeName(string containerTypeName)
+    {
+        var normalizedName = containerTypeName.Trim().ToUpper();
+
+        if (normalizedName.Contains("DRY"))
+            return 'U';
+
+        if (normalizedName.Contains("REEFER"))
+            return 'R';
+
+        if (normalizedName.Contains("OPEN TOP"))
+            return 'S';
+
+        if (normalizedName.Contains("FLAT"))
+            return 'F';
+
+        if (normalizedName.Contains("BUNKER"))
+            return 'B';
+
+        if (normalizedName.Contains("VENTILATED"))
+            return 'V';
+
+        if (normalizedName.Contains("SPECIALIZED"))
+            return 'P';
+
+        return null;
+    }
+
+    private static string GetExpectedClassificationByTypeCode(char typeCode)
+    {
+        return char.ToUpper(typeCode) switch
+        {
+            'U' or 'V' or 'B' => "A",
+            'S' or 'F' or 'P' => "B",
+            'R' => "C",
+            _ => throw new UserFriendlyException(ErrorCode.BadRequest, $"Unsupported container type code: {typeCode}")
+        };
     }
 
     private static bool IsValidCheckDigit(string normalizedContainerNumber, char actualCheckDigit)
