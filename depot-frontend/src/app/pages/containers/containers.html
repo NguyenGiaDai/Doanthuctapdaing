@@ -219,6 +219,121 @@
     </form>
   </section>
 
+  <section *ngIf="isHistoryModalOpen" class="modal-backdrop">
+    <article class="history-modal-card">
+      <div class="form-header">
+        <div>
+          <p>LỊCH SỬ DI CHUYỂN</p>
+          <h2>{{ historyContainer?.containerNumber || 'Container' }}</h2>
+        </div>
+
+        <button
+          type="button"
+          class="icon-button"
+          (click)="closeContainerHistoryModal()"
+          [disabled]="isHistoryLoading"
+        >
+          ×
+        </button>
+      </div>
+
+      <div *ngIf="isHistoryLoading" class="form-message">
+        Đang tải lịch sử container...
+      </div>
+
+      <div *ngIf="historyErrorMessage" class="form-message error-card">
+        {{ historyErrorMessage }}
+      </div>
+
+      <div
+        *ngIf="!isHistoryLoading && !historyErrorMessage && previousPosition && currentPosition"
+        class="movement-preview"
+      >
+        <section class="position-card previous">
+          <p>{{ previousPosition.title }}</p>
+          <h3>{{ previousPosition.status }}</h3>
+
+          <div class="position-grid">
+            <div>
+              <span>Block</span>
+              <strong>{{ previousPosition.block }}</strong>
+            </div>
+
+            <div>
+              <span>Bay</span>
+              <strong>{{ previousPosition.bay }}</strong>
+            </div>
+
+            <div>
+              <span>Row</span>
+              <strong>{{ previousPosition.row }}</strong>
+            </div>
+
+            <div>
+              <span>Tier</span>
+              <strong>{{ previousPosition.tier }}</strong>
+            </div>
+          </div>
+
+          <small>{{ previousPosition.description }}</small>
+        </section>
+
+        <div class="movement-arrow">
+          →
+        </div>
+
+        <section class="position-card current">
+          <p>{{ currentPosition.title }}</p>
+          <h3>{{ currentPosition.status }}</h3>
+
+          <div class="position-grid">
+            <div>
+              <span>Block</span>
+              <strong>{{ currentPosition.block }}</strong>
+            </div>
+
+            <div>
+              <span>Bay</span>
+              <strong>{{ currentPosition.bay }}</strong>
+            </div>
+
+            <div>
+              <span>Row</span>
+              <strong>{{ currentPosition.row }}</strong>
+            </div>
+
+            <div>
+              <span>Tier</span>
+              <strong>{{ currentPosition.tier }}</strong>
+            </div>
+          </div>
+
+          <small>{{ currentPosition.description }}</small>
+        </section>
+      </div>
+
+      <div
+        *ngIf="!isHistoryLoading && !historyErrorMessage && latestHistoryTransaction"
+        class="history-summary"
+      >
+        <div>
+          <span>Giao dịch gần nhất</span>
+          <strong>{{ latestHistoryTransaction.transactionType }}</strong>
+        </div>
+
+        <div>
+          <span>Thời gian</span>
+          <strong>{{ formatHistoryDate(latestHistoryTransaction.transactionTime) }}</strong>
+        </div>
+
+        <div>
+          <span>Số xe</span>
+          <strong>{{ latestHistoryTransaction.vehicleNumber || '-' }}</strong>
+        </div>
+      </div>
+    </article>
+  </section>
+
   <section *ngIf="isLoading" class="state-card">
     Đang tải danh sách container từ backend...
   </section>
@@ -359,7 +474,14 @@
       </div>
 
       <div class="detail-actions">
-        <button type="button" class="secondary-button">Xem lịch sử</button>
+        <button
+          type="button"
+          class="secondary-button"
+          (click)="openContainerHistoryModal(container)"
+        >
+          Xem lịch sử
+        </button>
+
         <button type="button" class="primary-button" (click)="openEditContainerModal(container)">
           Chỉnh sửa
         </button>

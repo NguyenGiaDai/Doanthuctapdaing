@@ -9,12 +9,24 @@ import {
   UpdateContainerRequest,
 } from '../../models/container.model';
 
+import { ContainerTransactionResponse } from '../../models/container-transaction.model';
 import { ContainerTypeResponse } from '../../models/container-type.model';
 import { LineOperatorResponse } from '../../models/line-operator.model';
 
 import { ContainerService } from '../../services/container.service';
+import { ContainerTransactionService } from '../../services/container-transaction.service';
 import { ContainerTypeService } from '../../services/container-type.service';
 import { LineOperatorService } from '../../services/line-operator.service';
+
+interface ContainerHistoryPosition {
+  title: string;
+  status: string;
+  block: string;
+  bay: string;
+  row: string;
+  tier: string;
+  description: string;
+}
 
 @Component({
   selector: 'app-containers',
@@ -55,6 +67,14 @@ export class Containers implements OnInit {
   isSubmittingContainer = false;
   containerFormErrorMessage = '';
 
+  isHistoryModalOpen = false;
+  isHistoryLoading = false;
+  historyErrorMessage = '';
+  historyContainer: ContainerResponse | null = null;
+  previousPosition: ContainerHistoryPosition | null = null;
+  currentPosition: ContainerHistoryPosition | null = null;
+  latestHistoryTransaction: ContainerTransactionResponse | null = null;
+
   containerForm = {
     containerNumber: '',
     containerTypeId: null as number | null,
@@ -68,6 +88,7 @@ export class Containers implements OnInit {
 
   constructor(
     private readonly containerService: ContainerService,
+    private readonly containerTransactionService: ContainerTransactionService,
     private readonly containerTypeService: ContainerTypeService,
     private readonly lineOperatorService: LineOperatorService,
     private readonly changeDetectorRef: ChangeDetectorRef
@@ -186,6 +207,69 @@ export class Containers implements OnInit {
     this.containerFormErrorMessage = '';
     this.isEditMode = false;
     this.editingContainerId = null;
+  }
+
+  openContainerHistoryModal(container: ContainerResponse): void {
+    this.historyContainer = container;
+    this.isHistoryModalOpen = true;
+    this.isHistoryLoading = true;
+    this.historyErrorMessage = '';
+    this.previousPosition = null;
+    this.currentPosition = null;
+    this.latestHistoryTransaction = null;
+    this.changeDetectorRef.detectChanges();
+
+    this.containerTransactionService.getContainerTransactions(1, 100).subscribe({
+      next: (response) => {
+        const containerTransactions = (response.items ?? [])
+          .filter((transaction) => transaction.containerId === container.id)
+          .sort((firstTransaction, secondTransaction) => {
+            const firstTime = this.getTransactionTimeValue(firstTransaction);
+            const secondTime = this.getTransactionTimeValue(secondTransaction);
+
+            return secondTime - firstTime;
+          });
+
+        if (containerTransactions.length === 0) {
+          this.historyErrorMessage =
+            'Container này chưa có lịch sử nhập, xuất hoặc di dời trong bãi.';
+          this.isHistoryLoading = false;
+          this.changeDetectorRef.detectChanges();
+          return;
+        }
+
+        const latestTransaction = containerTransactions[0];
+
+        this.latestHistoryTransaction = latestTransaction;
+        this.previousPosition = this.buildPreviousPosition(latestTransaction);
+        this.currentPosition = this.buildCurrentPosition(latestTransaction);
+
+        this.isHistoryLoading = false;
+        this.changeDetectorRef.detectChanges();
+      },
+      error: (error) => {
+        console.error('Load selected container history failed:', error);
+
+        this.historyErrorMessage =
+          'Không tải được lịch sử container. Hãy kiểm tra backend Docker, proxy hoặc API ContainerTransaction.';
+
+        this.isHistoryLoading = false;
+        this.changeDetectorRef.detectChanges();
+      },
+    });
+  }
+
+  closeContainerHistoryModal(): void {
+    if (this.isHistoryLoading) {
+      return;
+    }
+
+    this.isHistoryModalOpen = false;
+    this.historyErrorMessage = '';
+    this.historyContainer = null;
+    this.previousPosition = null;
+    this.currentPosition = null;
+    this.latestHistoryTransaction = null;
   }
 
   submitContainerForm(): void {
@@ -553,6 +637,26 @@ export class Containers implements OnInit {
     return `${year}-${month}-${day}`;
   }
 
+  formatHistoryDate(dateValue: string | null | undefined): string {
+    if (!dateValue) {
+      return '-';
+    }
+
+    const date = new Date(dateValue);
+
+    if (Number.isNaN(date.getTime())) {
+      return dateValue.replace('T', ' ');
+    }
+
+    const year = date.getFullYear();
+    const month = `${date.getMonth() + 1}`.padStart(2, '0');
+    const day = `${date.getDate()}`.padStart(2, '0');
+    const hour = `${date.getHours()}`.padStart(2, '0');
+    const minute = `${date.getMinutes()}`.padStart(2, '0');
+
+    return `${year}-${month}-${day} ${hour}:${minute}`;
+  }
+
   getStatusClass(status: string | null): string {
     const normalizedStatus = status?.toLowerCase();
 
@@ -587,5 +691,117 @@ export class Containers implements OnInit {
     }
 
     return '';
+  }
+
+  private buildPreviousPosition(
+    transaction: ContainerTransactionResponse
+  ): ContainerHistoryPosition {
+    const transactionType = transaction.transactionType?.toLowerCase();
+
+    if (transactionType === 'in') {
+      return {
+        title: 'Vị trí trước đó',
+        status: 'Ngoài bãi',
+        block: '-',
+        bay: '-',
+        row: '-',
+        tier: '-',
+        description: 'Container chưa nằm trong bãi trước giao dịch nhập bãi.',
+      };
+    }
+
+    if (transactionType === 'out') {
+      return this.buildPositionCard(
+        'Vị trí trước đó',
+        'Trong bãi',
+        transaction.fromBlockId,
+        transaction.fromBay,
+        transaction.fromRow,
+        transaction.fromTier,
+        'Vị trí container trước khi xuất khỏi bãi.'
+      );
+    }
+
+    return this.buildPositionCard(
+      'Vị trí trước đó',
+      'Trong bãi',
+      transaction.fromBlockId,
+      transaction.fromBay,
+      transaction.fromRow,
+      transaction.fromTier,
+      'Vị trí container trước lần di dời gần nhất.'
+    );
+  }
+
+  private buildCurrentPosition(
+    transaction: ContainerTransactionResponse
+  ): ContainerHistoryPosition {
+    const transactionType = transaction.transactionType?.toLowerCase();
+
+    if (transactionType === 'out') {
+      return {
+        title: 'Vị trí hiện tại',
+        status: 'Ngoài bãi',
+        block: '-',
+        bay: '-',
+        row: '-',
+        tier: '-',
+        description: 'Container đã được xuất khỏi bãi.',
+      };
+    }
+
+    if (transactionType === 'in') {
+      return this.buildPositionCard(
+        'Vị trí hiện tại',
+        'Trong bãi',
+        transaction.toBlockId,
+        transaction.toBay,
+        transaction.toRow,
+        transaction.toTier,
+        'Vị trí container sau khi nhập bãi.'
+      );
+    }
+
+    return this.buildPositionCard(
+      'Vị trí hiện tại',
+      'Trong bãi',
+      transaction.toBlockId,
+      transaction.toBay,
+      transaction.toRow,
+      transaction.toTier,
+      'Vị trí container sau lần di dời gần nhất.'
+    );
+  }
+
+  private buildPositionCard(
+    title: string,
+    status: string,
+    blockId: number | null,
+    bay: number | null,
+    row: number | null,
+    tier: number | null,
+    description: string
+  ): ContainerHistoryPosition {
+    return {
+      title,
+      status,
+      block: blockId ? String(blockId) : '-',
+      bay: bay ? String(bay) : '-',
+      row: row ? String(row) : '-',
+      tier: tier ? String(tier) : '-',
+      description,
+    };
+  }
+
+  private getTransactionTimeValue(transaction: ContainerTransactionResponse): number {
+    if (transaction.transactionTime) {
+      const timeValue = new Date(transaction.transactionTime).getTime();
+
+      if (!Number.isNaN(timeValue)) {
+        return timeValue;
+      }
+    }
+
+    return transaction.id;
   }
 }
