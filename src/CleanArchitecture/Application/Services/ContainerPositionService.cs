@@ -57,6 +57,7 @@ public class ContainerPositionService(IUnitOfWork unitOfWork, IMapper mapper) : 
             throw BuildValidationException("Block not found");
 
         ValidatePositionInBlock(block.BlockType, block.MaxBay, block.MaxRow, block.MaxTier, request.Bay, request.Row, request.Tier);
+        ValidateContainerAllowedInBlock(block.BlockType, container.ContainerClassification, container.ContainerCondition);
 
         var position = _mapper.Map<ContainerPosition>(request);
 
@@ -87,6 +88,7 @@ public class ContainerPositionService(IUnitOfWork unitOfWork, IMapper mapper) : 
             throw BuildValidationException("Block not found");
 
         ValidatePositionInBlock(block.BlockType, block.MaxBay, block.MaxRow, block.MaxTier, request.Bay, request.Row, request.Tier);
+        ValidateContainerAllowedInBlock(block.BlockType, container.ContainerClassification, container.ContainerCondition);
 
         position.ContainerId = request.ContainerId;
         position.BlockId = request.BlockId;
@@ -113,10 +115,13 @@ public class ContainerPositionService(IUnitOfWork unitOfWork, IMapper mapper) : 
         if (string.IsNullOrWhiteSpace(blockType))
             throw BuildValidationException("Block type is required");
 
-        if (blockType == "Real")
+        if (!IsValidBlockType(blockType))
+            throw BuildValidationException("Block type must be Normal, Special, Electric, Damaged or Virtual");
+
+        if (IsPhysicalBlockType(blockType))
         {
             if (!maxBay.HasValue || !maxRow.HasValue || !maxTier.HasValue)
-                throw BuildValidationException("Real block must have MaxBay, MaxRow and MaxTier");
+                throw BuildValidationException("Normal, Special, Electric and Damaged blocks must have MaxBay, MaxRow and MaxTier");
 
             if (bay <= 0 || bay > maxBay.Value)
                 throw BuildValidationException($"Bay must be between 1 and {maxBay.Value}");
@@ -127,6 +132,55 @@ public class ContainerPositionService(IUnitOfWork unitOfWork, IMapper mapper) : 
             if (tier <= 0 || tier > maxTier.Value)
                 throw BuildValidationException($"Tier must be between 1 and {maxTier.Value}");
         }
+
+        if (IsVirtualBlockType(blockType))
+        {
+            if (maxBay.HasValue || maxRow.HasValue || maxTier.HasValue)
+                throw BuildValidationException("Virtual block must not have MaxBay, MaxRow or MaxTier");
+        }
+    }
+
+    private static void ValidateContainerAllowedInBlock(
+        string blockType,
+        string containerClassification,
+        string containerCondition)
+    {
+        if (IsVirtualBlockType(blockType))
+            return;
+
+        if (string.Equals(blockType, "Normal", StringComparison.OrdinalIgnoreCase)
+            && !string.Equals(containerClassification, "A", StringComparison.OrdinalIgnoreCase))
+            throw BuildValidationException("Normal block can only contain classification A containers");
+
+        if (string.Equals(blockType, "Special", StringComparison.OrdinalIgnoreCase)
+            && !string.Equals(containerClassification, "B", StringComparison.OrdinalIgnoreCase))
+            throw BuildValidationException("Special block can only contain classification B containers");
+
+        if (string.Equals(blockType, "Electric", StringComparison.OrdinalIgnoreCase)
+            && !string.Equals(containerClassification, "C", StringComparison.OrdinalIgnoreCase))
+            throw BuildValidationException("Electric block can only contain classification C containers");
+
+        if (string.Equals(blockType, "Damaged", StringComparison.OrdinalIgnoreCase)
+            && !string.Equals(containerCondition, "Damaged", StringComparison.OrdinalIgnoreCase))
+            throw BuildValidationException("Damaged block can only contain damaged containers");
+    }
+
+    private static bool IsValidBlockType(string blockType)
+    {
+        return IsPhysicalBlockType(blockType) || IsVirtualBlockType(blockType);
+    }
+
+    private static bool IsPhysicalBlockType(string blockType)
+    {
+        return string.Equals(blockType, "Normal", StringComparison.OrdinalIgnoreCase)
+               || string.Equals(blockType, "Special", StringComparison.OrdinalIgnoreCase)
+               || string.Equals(blockType, "Electric", StringComparison.OrdinalIgnoreCase)
+               || string.Equals(blockType, "Damaged", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static bool IsVirtualBlockType(string blockType)
+    {
+        return string.Equals(blockType, "Virtual", StringComparison.OrdinalIgnoreCase);
     }
 
     private static ValidationException BuildValidationException(string message)

@@ -36,7 +36,6 @@ public class ContainerServiceTests
     [Fact]
     public async Task Get_WhenContainerExists_ShouldReturnContainerResponse()
     {
-        // Arrange
         var containerId = 1;
         var container = CreateContainer(containerId, "CMAU1234564");
 
@@ -47,10 +46,8 @@ public class ContainerServiceTests
             ))
             .ReturnsAsync(container);
 
-        // Act
         var result = await _containerService.Get(containerId);
 
-        // Assert
         Assert.NotNull(result);
         Assert.Equal(containerId, result.Id);
         Assert.Equal("CMAU1234564", result.ContainerNumber);
@@ -72,7 +69,6 @@ public class ContainerServiceTests
     [Fact]
     public async Task Get_WhenContainerDoesNotExist_ShouldThrowUserFriendlyException()
     {
-        // Arrange
         var containerId = 999;
 
         _unitOfWorkMock
@@ -82,19 +78,16 @@ public class ContainerServiceTests
             ))
             .ReturnsAsync((Container?)null);
 
-        // Act
         var exception = await Assert.ThrowsAsync<UserFriendlyException>(
             () => _containerService.Get(containerId)
         );
 
-        // Assert
         Assert.Equal("Container not found", exception.Message);
     }
 
     [Fact]
     public async Task Add_WhenContainerNumberIsEmpty_ShouldThrowUserFriendlyException()
     {
-        // Arrange
         var request = new CreateContainerRequest
         {
             ContainerNumber = "",
@@ -106,19 +99,16 @@ public class ContainerServiceTests
             CurrentStatus = "OutYard"
         };
 
-        // Act
         var exception = await Assert.ThrowsAsync<UserFriendlyException>(
             () => _containerService.Add(request, CancellationToken.None)
         );
 
-        // Assert
         Assert.Equal("Container number is required", exception.Message);
     }
 
     [Fact]
     public async Task Add_WhenContainerNumberFormatIsInvalid_ShouldThrowUserFriendlyException()
     {
-        // Arrange
         var request = new CreateContainerRequest
         {
             ContainerNumber = "ABC123",
@@ -130,38 +120,32 @@ public class ContainerServiceTests
             CurrentStatus = "OutYard"
         };
 
-        // Act
         var exception = await Assert.ThrowsAsync<UserFriendlyException>(
             () => _containerService.Add(request, CancellationToken.None)
         );
 
-        // Assert
         Assert.Contains("Container number is invalid", exception.Message);
     }
 
     [Fact]
     public async Task Add_WhenContainerNumberAlreadyExists_ShouldThrowUserFriendlyException()
     {
-        // Arrange
         var request = CreateValidCreateRequest("CMAU1234564");
 
         _unitOfWorkMock
             .Setup(x => x.ContainerRepository.AnyAsync(It.IsAny<Expression<Func<Container, bool>>>()))
             .ReturnsAsync(true);
 
-        // Act
         var exception = await Assert.ThrowsAsync<UserFriendlyException>(
             () => _containerService.Add(request, CancellationToken.None)
         );
 
-        // Assert
         Assert.Equal("Container number already exists", exception.Message);
     }
 
     [Fact]
     public async Task Add_WhenContainerTypeDoesNotExist_ShouldThrowUserFriendlyException()
     {
-        // Arrange
         var request = CreateValidCreateRequest("CMAU1234564");
 
         _unitOfWorkMock
@@ -169,22 +153,22 @@ public class ContainerServiceTests
             .ReturnsAsync(false);
 
         _unitOfWorkMock
-            .Setup(x => x.ContainerTypeRepository.AnyAsync(It.IsAny<Expression<Func<ContainerType, bool>>>()))
-            .ReturnsAsync(false);
+            .Setup(x => x.ContainerTypeRepository.FirstOrDefaultAsync(
+                It.IsAny<Expression<Func<ContainerType, bool>>>(),
+                It.IsAny<Func<IQueryable<ContainerType>, IQueryable<ContainerType>>?>()
+            ))
+            .ReturnsAsync((ContainerType?)null);
 
-        // Act
         var exception = await Assert.ThrowsAsync<UserFriendlyException>(
             () => _containerService.Add(request, CancellationToken.None)
         );
 
-        // Assert
         Assert.Equal("Container type not found", exception.Message);
     }
 
     [Fact]
     public async Task Add_WhenLineOperatorDoesNotExist_ShouldThrowUserFriendlyException()
     {
-        // Arrange
         var request = CreateValidCreateRequest("CMAU1234564");
 
         _unitOfWorkMock
@@ -192,26 +176,26 @@ public class ContainerServiceTests
             .ReturnsAsync(false);
 
         _unitOfWorkMock
-            .Setup(x => x.ContainerTypeRepository.AnyAsync(It.IsAny<Expression<Func<ContainerType, bool>>>()))
-            .ReturnsAsync(true);
+            .Setup(x => x.ContainerTypeRepository.FirstOrDefaultAsync(
+                It.IsAny<Expression<Func<ContainerType, bool>>>(),
+                It.IsAny<Func<IQueryable<ContainerType>, IQueryable<ContainerType>>?>()
+            ))
+            .ReturnsAsync(CreateContainerType());
 
         _unitOfWorkMock
             .Setup(x => x.LineOperatorRepository.AnyAsync(It.IsAny<Expression<Func<LineOperator, bool>>>()))
             .ReturnsAsync(false);
 
-        // Act
         var exception = await Assert.ThrowsAsync<UserFriendlyException>(
             () => _containerService.Add(request, CancellationToken.None)
         );
 
-        // Assert
         Assert.Equal("Line operator not found", exception.Message);
     }
 
     [Fact]
     public async Task Add_WhenRequestIsValid_ShouldCreateContainer()
     {
-        // Arrange
         var request = CreateValidCreateRequest("CMAU1234564");
         var createdContainer = CreateContainer(1, "CMAU1234564");
 
@@ -220,8 +204,11 @@ public class ContainerServiceTests
             .ReturnsAsync(false);
 
         _unitOfWorkMock
-            .Setup(x => x.ContainerTypeRepository.AnyAsync(It.IsAny<Expression<Func<ContainerType, bool>>>()))
-            .ReturnsAsync(true);
+            .Setup(x => x.ContainerTypeRepository.FirstOrDefaultAsync(
+                It.IsAny<Expression<Func<ContainerType, bool>>>(),
+                It.IsAny<Func<IQueryable<ContainerType>, IQueryable<ContainerType>>?>()
+            ))
+            .ReturnsAsync(CreateContainerType());
 
         _unitOfWorkMock
             .Setup(x => x.LineOperatorRepository.AnyAsync(It.IsAny<Expression<Func<LineOperator, bool>>>()))
@@ -248,10 +235,8 @@ public class ContainerServiceTests
             ))
             .ReturnsAsync(createdContainer);
 
-        // Act
         var result = await _containerService.Add(request, CancellationToken.None);
 
-        // Assert
         Assert.NotNull(result);
         Assert.Equal(1, result.Id);
         Assert.Equal("CMAU1234564", result.ContainerNumber);
@@ -270,37 +255,30 @@ public class ContainerServiceTests
     [Fact]
     public async Task Update_WhenContainerNumberIsEmpty_ShouldThrowUserFriendlyException()
     {
-        // Arrange
         var request = CreateValidUpdateRequest(1, "");
 
-        // Act
         var exception = await Assert.ThrowsAsync<UserFriendlyException>(
             () => _containerService.Update(request, CancellationToken.None)
         );
 
-        // Assert
         Assert.Equal("Container number is required", exception.Message);
     }
 
     [Fact]
     public async Task Update_WhenContainerNumberFormatIsInvalid_ShouldThrowUserFriendlyException()
     {
-        // Arrange
         var request = CreateValidUpdateRequest(1, "ABC123");
 
-        // Act
         var exception = await Assert.ThrowsAsync<UserFriendlyException>(
             () => _containerService.Update(request, CancellationToken.None)
         );
 
-        // Assert
         Assert.Contains("Container number is invalid", exception.Message);
     }
 
     [Fact]
     public async Task Update_WhenContainerDoesNotExist_ShouldThrowUserFriendlyException()
     {
-        // Arrange
         var request = CreateValidUpdateRequest(999, "CMAU1234564");
 
         _unitOfWorkMock
@@ -310,19 +288,16 @@ public class ContainerServiceTests
             ))
             .ReturnsAsync((Container?)null);
 
-        // Act
         var exception = await Assert.ThrowsAsync<UserFriendlyException>(
             () => _containerService.Update(request, CancellationToken.None)
         );
 
-        // Assert
         Assert.Equal("Container not found", exception.Message);
     }
 
     [Fact]
     public async Task Update_WhenContainerNumberAlreadyExists_ShouldThrowUserFriendlyException()
     {
-        // Arrange
         var request = CreateValidUpdateRequest(1, "CMAU1234564");
         var existingContainer = CreateContainer(1, "MSCU1234566");
 
@@ -337,19 +312,16 @@ public class ContainerServiceTests
             .Setup(x => x.ContainerRepository.AnyAsync(It.IsAny<Expression<Func<Container, bool>>>()))
             .ReturnsAsync(true);
 
-        // Act
         var exception = await Assert.ThrowsAsync<UserFriendlyException>(
             () => _containerService.Update(request, CancellationToken.None)
         );
 
-        // Assert
         Assert.Equal("Container number already exists", exception.Message);
     }
 
     [Fact]
     public async Task Update_WhenContainerTypeDoesNotExist_ShouldThrowUserFriendlyException()
     {
-        // Arrange
         var request = CreateValidUpdateRequest(1, "CMAU1234564");
         var existingContainer = CreateContainer(1, "CMAU1234564");
 
@@ -365,22 +337,22 @@ public class ContainerServiceTests
             .ReturnsAsync(false);
 
         _unitOfWorkMock
-            .Setup(x => x.ContainerTypeRepository.AnyAsync(It.IsAny<Expression<Func<ContainerType, bool>>>()))
-            .ReturnsAsync(false);
+            .Setup(x => x.ContainerTypeRepository.FirstOrDefaultAsync(
+                It.IsAny<Expression<Func<ContainerType, bool>>>(),
+                It.IsAny<Func<IQueryable<ContainerType>, IQueryable<ContainerType>>?>()
+            ))
+            .ReturnsAsync((ContainerType?)null);
 
-        // Act
         var exception = await Assert.ThrowsAsync<UserFriendlyException>(
             () => _containerService.Update(request, CancellationToken.None)
         );
 
-        // Assert
         Assert.Equal("Container type not found", exception.Message);
     }
 
     [Fact]
     public async Task Update_WhenLineOperatorDoesNotExist_ShouldThrowUserFriendlyException()
     {
-        // Arrange
         var request = CreateValidUpdateRequest(1, "CMAU1234564");
         var existingContainer = CreateContainer(1, "CMAU1234564");
 
@@ -396,26 +368,26 @@ public class ContainerServiceTests
             .ReturnsAsync(false);
 
         _unitOfWorkMock
-            .Setup(x => x.ContainerTypeRepository.AnyAsync(It.IsAny<Expression<Func<ContainerType, bool>>>()))
-            .ReturnsAsync(true);
+            .Setup(x => x.ContainerTypeRepository.FirstOrDefaultAsync(
+                It.IsAny<Expression<Func<ContainerType, bool>>>(),
+                It.IsAny<Func<IQueryable<ContainerType>, IQueryable<ContainerType>>?>()
+            ))
+            .ReturnsAsync(CreateContainerType());
 
         _unitOfWorkMock
             .Setup(x => x.LineOperatorRepository.AnyAsync(It.IsAny<Expression<Func<LineOperator, bool>>>()))
             .ReturnsAsync(false);
 
-        // Act
         var exception = await Assert.ThrowsAsync<UserFriendlyException>(
             () => _containerService.Update(request, CancellationToken.None)
         );
 
-        // Assert
         Assert.Equal("Line operator not found", exception.Message);
     }
 
     [Fact]
     public async Task Update_WhenRequestIsValid_ShouldUpdateContainer()
     {
-        // Arrange
         var request = CreateValidUpdateRequest(1, "CMAU1234564");
         var existingContainer = CreateContainer(1, "MSCU1234566");
         var updatedContainer = CreateContainer(1, "CMAU1234564");
@@ -433,8 +405,11 @@ public class ContainerServiceTests
             .ReturnsAsync(false);
 
         _unitOfWorkMock
-            .Setup(x => x.ContainerTypeRepository.AnyAsync(It.IsAny<Expression<Func<ContainerType, bool>>>()))
-            .ReturnsAsync(true);
+            .Setup(x => x.ContainerTypeRepository.FirstOrDefaultAsync(
+                It.IsAny<Expression<Func<ContainerType, bool>>>(),
+                It.IsAny<Func<IQueryable<ContainerType>, IQueryable<ContainerType>>?>()
+            ))
+            .ReturnsAsync(CreateContainerType());
 
         _unitOfWorkMock
             .Setup(x => x.LineOperatorRepository.AnyAsync(It.IsAny<Expression<Func<LineOperator, bool>>>()))
@@ -445,10 +420,8 @@ public class ContainerServiceTests
             .Callback<Action, CancellationToken>((action, _) => action())
             .Returns(Task.CompletedTask);
 
-        // Act
         var result = await _containerService.Update(request, CancellationToken.None);
 
-        // Assert
         Assert.NotNull(result);
         Assert.Equal(1, result.Id);
         Assert.Equal("CMAU1234564", result.ContainerNumber);
@@ -496,6 +469,20 @@ public class ContainerServiceTests
         };
     }
 
+    private static ContainerType CreateContainerType()
+    {
+        return new ContainerType
+        {
+            Id = 1,
+            ContainerTypeCode = "20DC",
+            ContainerTypeName = "20 Dry Container",
+            ISOCode = "22G1",
+            ContainerSize = 20,
+            MaximumWeight = 30480,
+            TareWeight = 2200
+        };
+    }
+
     private static Container CreateContainer(int id, string containerNumber)
     {
         return new Container
@@ -509,16 +496,7 @@ public class ContainerServiceTests
             ContainerClassification = "A",
             CurrentStatus = "InYard",
             DateOfManufacture = new DateTime(2020, 1, 1),
-            ContainerTypeNavigation = new ContainerType
-            {
-                Id = 1,
-                ContainerTypeCode = "20DC",
-                ContainerTypeName = "20 Dry Container",
-                ISOCode = "22G1",
-                ContainerSize = 20,
-                MaximumWeight = 30480,
-                TareWeight = 2200
-            },
+            ContainerTypeNavigation = CreateContainerType(),
             LineOperator = new LineOperator
             {
                 Id = 1,

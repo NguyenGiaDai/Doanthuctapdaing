@@ -126,7 +126,7 @@ public class PositionAndDeliveryOrderServiceTests
             .Setup(x => x.BlockRepository.FirstOrDefaultAsync(
                 It.IsAny<Expression<Func<Block, bool>>>(),
                 It.IsAny<Func<IQueryable<Block>, IQueryable<Block>>?>()))
-            .ReturnsAsync(CreateRealBlock());
+            .ReturnsAsync(CreateNormalBlock());
 
         await Assert.ThrowsAsync<ValidationException>(() => service.Create(request));
     }
@@ -146,7 +146,7 @@ public class PositionAndDeliveryOrderServiceTests
             .Setup(x => x.BlockRepository.FirstOrDefaultAsync(
                 It.IsAny<Expression<Func<Block, bool>>>(),
                 It.IsAny<Func<IQueryable<Block>, IQueryable<Block>>?>()))
-            .ReturnsAsync(CreateRealBlock());
+            .ReturnsAsync(CreateNormalBlock());
 
         _unitOfWorkMock
             .Setup(x => x.ContainerPositionRepository.AddAsync(It.IsAny<ContainerPosition>()))
@@ -220,7 +220,7 @@ public class PositionAndDeliveryOrderServiceTests
             .Setup(x => x.BlockRepository.FirstOrDefaultAsync(
                 It.IsAny<Expression<Func<Block, bool>>>(),
                 It.IsAny<Func<IQueryable<Block>, IQueryable<Block>>?>()))
-            .ReturnsAsync(CreateRealBlock());
+            .ReturnsAsync(CreateNormalBlock());
 
         await service.Update(1, new UpdateContainerPositionRequest
         {
@@ -571,7 +571,7 @@ public class PositionAndDeliveryOrderServiceTests
         };
     }
 
-    private static Block CreateRealBlock()
+    private static Block CreateNormalBlock()
     {
         return new Block
         {
@@ -579,7 +579,7 @@ public class PositionAndDeliveryOrderServiceTests
             DepotId = 1,
             BlockCode = "A",
             BlockName = "Block A",
-            BlockType = "Real",
+            BlockType = "Normal",
             MaxBay = 10,
             MaxRow = 10,
             MaxTier = 5

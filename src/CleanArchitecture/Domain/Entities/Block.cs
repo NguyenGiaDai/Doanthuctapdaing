@@ -8,7 +8,7 @@ public class Block
     public string BlockCode { get; set; } = string.Empty;
     public string BlockName { get; set; } = string.Empty;
 
-    // Real / Virtual
+    // Normal / Special / Electric / Damaged / Virtual
     public string BlockType { get; set; } = string.Empty;
 
     // Với block ảo có thể để null

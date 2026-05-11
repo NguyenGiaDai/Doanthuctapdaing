@@ -479,7 +479,7 @@ public class MasterDataServiceTests
 
         Assert.Equal(1, result.Id);
         Assert.Equal("A", result.BlockCode);
-        Assert.Equal("Real", result.BlockType);
+        Assert.Equal("Normal", result.BlockType);
     }
 
     [Fact]
@@ -499,7 +499,7 @@ public class MasterDataServiceTests
     }
 
     [Fact]
-    public async Task Block_Create_WhenValidRealBlock_ShouldCreateBlock()
+    public async Task Block_Create_WhenValidNormalBlock_ShouldCreateBlock()
     {
         var service = new BlockService(_unitOfWorkMock.Object, _mapper);
 
@@ -523,7 +523,7 @@ public class MasterDataServiceTests
             DepotId = 1,
             BlockCode = "A",
             BlockName = "Block A",
-            BlockType = "Real",
+            BlockType = "Normal",
             MaxBay = 10,
             MaxRow = 10,
             MaxTier = 5
@@ -585,7 +585,7 @@ public class MasterDataServiceTests
             DepotId = 1,
             BlockCode = "B",
             BlockName = "Block B",
-            BlockType = "Real",
+            BlockType = "Normal",
             MaxBay = 20,
             MaxRow = 10,
             MaxTier = 5
@@ -858,7 +858,7 @@ public class MasterDataServiceTests
             DepotId = 1,
             BlockCode = "A",
             BlockName = "Block A",
-            BlockType = "Real",
+            BlockType = "Normal",
             MaxBay = 10,
             MaxRow = 10,
             MaxTier = 5

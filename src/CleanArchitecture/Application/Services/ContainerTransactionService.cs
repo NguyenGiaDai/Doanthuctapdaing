@@ -103,20 +103,21 @@ public class ContainerTransactionService(
             _unitOfWork.ContainerTransactionRepository.Update(transaction);
         }, CancellationToken.None);
     }
+
     public async Task<int> ImportContainer(ImportContainerRequest request)
     {
         var container = await _unitOfWork.ContainerRepository.FirstOrDefaultAsync(
             x => x.Id == request.ContainerId,
             q => q.Include(c => c.ContainerTypeNavigation));
-        
+
         if (container == null)
             throw new UserFriendlyException(ErrorCode.NotFound, "Container not found");
-        
+
         if (container.CurrentStatus == "InYard")
             throw BuildValidationException("Container is already in yard and cannot be imported again");
 
         var block = await _unitOfWork.BlockRepository.FirstOrDefaultAsync(x => x.Id == request.ToBlockId);
-        
+
         if (block == null)
             throw new UserFriendlyException(ErrorCode.NotFound, "Block not found");
 
@@ -129,13 +130,15 @@ public class ContainerTransactionService(
             request.ToRow,
             request.ToTier,
             "To");
-        
+
+        ValidateContainerAllowedInBlock(block.BlockType, container.ContainerClassification, container.ContainerCondition);
+
         if (container.ContainerTypeNavigation?.ContainerSize == 20 && request.ToBay % 2 == 0)
             throw BuildValidationException("20ft container must be placed in an odd bay");
 
         if (container.ContainerTypeNavigation?.ContainerSize == 40 && request.ToBay % 2 != 0)
             throw BuildValidationException("40ft container must be placed in an even bay");
-        
+
         var occupiedPosition = await _unitOfWork.ContainerPositionRepository.FirstOrDefaultAsync(
             x => x.BlockId == request.ToBlockId
                  && x.Bay == request.ToBay
@@ -201,13 +204,14 @@ public class ContainerTransactionService(
 
         return transaction.Id;
     }
+
     public async Task<int> ExportContainer(ExportContainerRequest request)
     {
         var container = await _unitOfWork.ContainerRepository.FirstOrDefaultAsync(x => x.Id == request.ContainerId);
-        
+
         if (container == null)
             throw new UserFriendlyException(ErrorCode.NotFound, "Container not found");
-        
+
         if (container.CurrentStatus != "InYard")
             throw BuildValidationException("Container is not currently in yard and cannot be exported");
 
@@ -216,16 +220,16 @@ public class ContainerTransactionService(
 
         if (deliveryOrder == null)
             throw new UserFriendlyException(ErrorCode.NotFound, "Delivery order not found");
-        
+
         if (deliveryOrder.ExpiryDate.Date < DateTime.UtcNow.Date)
             throw BuildValidationException("Delivery order has expired and cannot be used for export");
-        
+
         if (container.LineOperatorId != deliveryOrder.LineOperatorId)
             throw BuildValidationException("Delivery order line operator does not match container line operator");
 
         if (container.ContainerTypeId != deliveryOrder.ContainerTypeId)
             throw BuildValidationException("Delivery order container type does not match container type");
-        
+
         var currentPosition = await _unitOfWork.ContainerPositionRepository
             .FirstOrDefaultAsync(x => x.ContainerId == request.ContainerId);
 
@@ -261,6 +265,7 @@ public class ContainerTransactionService(
 
         return transaction.Id;
     }
+
     public async Task<List<ContainerThroughputReportResponse>> GetContainerThroughputReport(ContainerThroughputReportRequest request)
     {
         var startDate = request.Date.Date;
@@ -290,6 +295,7 @@ public class ContainerTransactionService(
 
         return report;
     }
+
     public async Task<List<ContainerYardInventoryReportResponse>> GetContainerYardInventoryReport(ContainerYardInventoryReportRequest request)
     {
         var reportDate = request.Date.Date;
@@ -422,6 +428,8 @@ public class ContainerTransactionService(
                 toRow,
                 toTier,
                 "To");
+
+            ValidateContainerAllowedInBlock(toBlock.BlockType, container.ContainerClassification, container.ContainerCondition);
         }
     }
 
@@ -438,13 +446,16 @@ public class ContainerTransactionService(
         if (string.IsNullOrWhiteSpace(blockType))
             throw BuildValidationException("Block type is required");
 
-        if (blockType == "Real")
+        if (!IsValidBlockType(blockType))
+            throw BuildValidationException("Block type must be Normal, Special, Electric, Damaged or Virtual");
+
+        if (IsPhysicalBlockType(blockType))
         {
             if (!maxBay.HasValue || !maxRow.HasValue || !maxTier.HasValue)
-                throw BuildValidationException("Real block must have MaxBay, MaxRow and MaxTier");
+                throw BuildValidationException("Normal, Special, Electric and Damaged blocks must have MaxBay, MaxRow and MaxTier");
 
             if (!bay.HasValue || !row.HasValue || !tier.HasValue)
-                throw BuildValidationException($"{prefix} Bay, Row and Tier are required for real block");
+                throw BuildValidationException($"{prefix} Bay, Row and Tier are required for Normal, Special, Electric and Damaged blocks");
 
             if (bay <= 0 || bay > maxBay.Value)
                 throw BuildValidationException($"{prefix} Bay must be between 1 and {maxBay.Value}");
@@ -455,6 +466,55 @@ public class ContainerTransactionService(
             if (tier <= 0 || tier > maxTier.Value)
                 throw BuildValidationException($"{prefix} Tier must be between 1 and {maxTier.Value}");
         }
+
+        if (IsVirtualBlockType(blockType))
+        {
+            if (maxBay.HasValue || maxRow.HasValue || maxTier.HasValue)
+                throw BuildValidationException("Virtual block must not have MaxBay, MaxRow or MaxTier");
+        }
+    }
+
+    private static void ValidateContainerAllowedInBlock(
+        string blockType,
+        string containerClassification,
+        string containerCondition)
+    {
+        if (IsVirtualBlockType(blockType))
+            return;
+
+        if (string.Equals(blockType, "Normal", StringComparison.OrdinalIgnoreCase)
+            && !string.Equals(containerClassification, "A", StringComparison.OrdinalIgnoreCase))
+            throw BuildValidationException("Normal block can only contain classification A containers");
+
+        if (string.Equals(blockType, "Special", StringComparison.OrdinalIgnoreCase)
+            && !string.Equals(containerClassification, "B", StringComparison.OrdinalIgnoreCase))
+            throw BuildValidationException("Special block can only contain classification B containers");
+
+        if (string.Equals(blockType, "Electric", StringComparison.OrdinalIgnoreCase)
+            && !string.Equals(containerClassification, "C", StringComparison.OrdinalIgnoreCase))
+            throw BuildValidationException("Electric block can only contain classification C containers");
+
+        if (string.Equals(blockType, "Damaged", StringComparison.OrdinalIgnoreCase)
+            && !string.Equals(containerCondition, "Damaged", StringComparison.OrdinalIgnoreCase))
+            throw BuildValidationException("Damaged block can only contain damaged containers");
+    }
+
+    private static bool IsValidBlockType(string blockType)
+    {
+        return IsPhysicalBlockType(blockType) || IsVirtualBlockType(blockType);
+    }
+
+    private static bool IsPhysicalBlockType(string blockType)
+    {
+        return string.Equals(blockType, "Normal", StringComparison.OrdinalIgnoreCase)
+               || string.Equals(blockType, "Special", StringComparison.OrdinalIgnoreCase)
+               || string.Equals(blockType, "Electric", StringComparison.OrdinalIgnoreCase)
+               || string.Equals(blockType, "Damaged", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static bool IsVirtualBlockType(string blockType)
+    {
+        return string.Equals(blockType, "Virtual", StringComparison.OrdinalIgnoreCase);
     }
 
     private static ValidationException BuildValidationException(string message)

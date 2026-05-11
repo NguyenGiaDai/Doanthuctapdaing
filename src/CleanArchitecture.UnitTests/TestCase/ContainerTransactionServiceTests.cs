@@ -38,7 +38,6 @@ public class ContainerTransactionServiceTests
     [Fact]
     public async Task Get_WhenTransactionExists_ShouldReturnResponse()
     {
-        // Arrange
         var transaction = CreateTransaction(1);
 
         _unitOfWorkMock
@@ -48,10 +47,8 @@ public class ContainerTransactionServiceTests
             ))
             .ReturnsAsync(transaction);
 
-        // Act
         var result = await _service.Get(1);
 
-        // Assert
         Assert.NotNull(result);
         Assert.Equal(1, result.Id);
         Assert.Equal(1, result.ContainerId);
@@ -64,7 +61,6 @@ public class ContainerTransactionServiceTests
     [Fact]
     public async Task Get_WhenTransactionDoesNotExist_ShouldThrowUserFriendlyException()
     {
-        // Arrange
         _unitOfWorkMock
             .Setup(x => x.ContainerTransactionRepository.FirstOrDefaultAsync(
                 It.IsAny<Expression<Func<ContainerTransaction, bool>>>(),
@@ -72,19 +68,16 @@ public class ContainerTransactionServiceTests
             ))
             .ReturnsAsync((ContainerTransaction?)null);
 
-        // Act
         var exception = await Assert.ThrowsAsync<UserFriendlyException>(
             () => _service.Get(999)
         );
 
-        // Assert
         Assert.Equal("Container transaction not found", exception.Message);
     }
 
     [Fact]
     public async Task Create_WhenContainerDoesNotExist_ShouldThrowValidationException()
     {
-        // Arrange
         var request = CreateValidCreateRequest();
 
         _unitOfWorkMock
@@ -94,7 +87,6 @@ public class ContainerTransactionServiceTests
             ))
             .ReturnsAsync((Container?)null);
 
-        // Act & Assert
         await Assert.ThrowsAsync<ValidationException>(
             () => _service.Create(request)
         );
@@ -103,7 +95,6 @@ public class ContainerTransactionServiceTests
     [Fact]
     public async Task Create_WhenTransactionTypeIsEmpty_ShouldThrowValidationException()
     {
-        // Arrange
         var request = CreateValidCreateRequest();
         request.TransactionType = "";
 
@@ -114,7 +105,6 @@ public class ContainerTransactionServiceTests
             ))
             .ReturnsAsync(CreateContainer());
 
-        // Act & Assert
         await Assert.ThrowsAsync<ValidationException>(
             () => _service.Create(request)
         );
@@ -123,7 +113,6 @@ public class ContainerTransactionServiceTests
     [Fact]
     public async Task Create_WhenInTransactionWithoutToBlock_ShouldThrowValidationException()
     {
-        // Arrange
         var request = CreateValidCreateRequest();
         request.ToBlockId = null;
 
@@ -134,7 +123,6 @@ public class ContainerTransactionServiceTests
             ))
             .ReturnsAsync(CreateContainer());
 
-        // Act & Assert
         await Assert.ThrowsAsync<ValidationException>(
             () => _service.Create(request)
         );
@@ -143,7 +131,6 @@ public class ContainerTransactionServiceTests
     [Fact]
     public async Task Create_WhenToBlockDoesNotExist_ShouldThrowValidationException()
     {
-        // Arrange
         var request = CreateValidCreateRequest();
 
         _unitOfWorkMock
@@ -160,7 +147,6 @@ public class ContainerTransactionServiceTests
             ))
             .ReturnsAsync((Block?)null);
 
-        // Act & Assert
         await Assert.ThrowsAsync<ValidationException>(
             () => _service.Create(request)
         );
@@ -169,7 +155,6 @@ public class ContainerTransactionServiceTests
     [Fact]
     public async Task Create_WhenRequestIsValid_ShouldCreateTransaction()
     {
-        // Arrange
         var request = CreateValidCreateRequest();
 
         _unitOfWorkMock
@@ -184,7 +169,7 @@ public class ContainerTransactionServiceTests
                 It.IsAny<Expression<Func<Block, bool>>>(),
                 It.IsAny<Func<IQueryable<Block>, IQueryable<Block>>?>()
             ))
-            .ReturnsAsync(CreateRealBlock());
+            .ReturnsAsync(CreateNormalBlock());
 
         _unitOfWorkMock
             .Setup(x => x.ExecuteTransactionAsync(It.IsAny<Func<Task>>(), It.IsAny<CancellationToken>()))
@@ -195,10 +180,8 @@ public class ContainerTransactionServiceTests
             .Callback<ContainerTransaction>(transaction => transaction.Id = 1)
             .Returns(Task.CompletedTask);
 
-        // Act
         var result = await _service.Create(request);
 
-        // Assert
         Assert.Equal(1, result);
 
         _unitOfWorkMock.Verify(
@@ -213,7 +196,6 @@ public class ContainerTransactionServiceTests
     [Fact]
     public async Task ImportContainer_WhenContainerDoesNotExist_ShouldThrowUserFriendlyException()
     {
-        // Arrange
         var request = CreateValidImportRequest();
 
         _unitOfWorkMock
@@ -223,19 +205,16 @@ public class ContainerTransactionServiceTests
             ))
             .ReturnsAsync((Container?)null);
 
-        // Act
         var exception = await Assert.ThrowsAsync<UserFriendlyException>(
             () => _service.ImportContainer(request)
         );
 
-        // Assert
         Assert.Equal("Container not found", exception.Message);
     }
 
     [Fact]
     public async Task ImportContainer_WhenContainerAlreadyInYard_ShouldThrowValidationException()
     {
-        // Arrange
         var request = CreateValidImportRequest();
         var container = CreateContainer();
         container.CurrentStatus = "InYard";
@@ -247,7 +226,6 @@ public class ContainerTransactionServiceTests
             ))
             .ReturnsAsync(container);
 
-        // Act & Assert
         await Assert.ThrowsAsync<ValidationException>(
             () => _service.ImportContainer(request)
         );
@@ -256,7 +234,6 @@ public class ContainerTransactionServiceTests
     [Fact]
     public async Task ImportContainer_WhenBlockDoesNotExist_ShouldThrowUserFriendlyException()
     {
-        // Arrange
         var request = CreateValidImportRequest();
 
         _unitOfWorkMock
@@ -273,19 +250,16 @@ public class ContainerTransactionServiceTests
             ))
             .ReturnsAsync((Block?)null);
 
-        // Act
         var exception = await Assert.ThrowsAsync<UserFriendlyException>(
             () => _service.ImportContainer(request)
         );
 
-        // Assert
         Assert.Equal("Block not found", exception.Message);
     }
 
     [Fact]
     public async Task ImportContainer_When20FtContainerPlacedInEvenBay_ShouldThrowValidationException()
     {
-        // Arrange
         var request = CreateValidImportRequest();
         request.ToBay = 2;
 
@@ -301,9 +275,8 @@ public class ContainerTransactionServiceTests
                 It.IsAny<Expression<Func<Block, bool>>>(),
                 It.IsAny<Func<IQueryable<Block>, IQueryable<Block>>?>()
             ))
-            .ReturnsAsync(CreateRealBlock());
+            .ReturnsAsync(CreateNormalBlock());
 
-        // Act & Assert
         await Assert.ThrowsAsync<ValidationException>(
             () => _service.ImportContainer(request)
         );
@@ -312,7 +285,6 @@ public class ContainerTransactionServiceTests
     [Fact]
     public async Task ImportContainer_WhenPositionOccupied_ShouldThrowValidationException()
     {
-        // Arrange
         var request = CreateValidImportRequest();
 
         _unitOfWorkMock
@@ -327,7 +299,7 @@ public class ContainerTransactionServiceTests
                 It.IsAny<Expression<Func<Block, bool>>>(),
                 It.IsAny<Func<IQueryable<Block>, IQueryable<Block>>?>()
             ))
-            .ReturnsAsync(CreateRealBlock());
+            .ReturnsAsync(CreateNormalBlock());
 
         _unitOfWorkMock
             .Setup(x => x.ContainerPositionRepository.FirstOrDefaultAsync(
@@ -336,7 +308,6 @@ public class ContainerTransactionServiceTests
             ))
             .ReturnsAsync(CreateContainerPosition(containerId: 2));
 
-        // Act & Assert
         await Assert.ThrowsAsync<ValidationException>(
             () => _service.ImportContainer(request)
         );
@@ -345,7 +316,6 @@ public class ContainerTransactionServiceTests
     [Fact]
     public async Task ImportContainer_WhenRequestIsValid_ShouldCreateTransactionAndPosition()
     {
-        // Arrange
         var request = CreateValidImportRequest();
         var container = CreateContainer(containerSize: 20);
         container.CurrentStatus = "OutYard";
@@ -362,7 +332,7 @@ public class ContainerTransactionServiceTests
                 It.IsAny<Expression<Func<Block, bool>>>(),
                 It.IsAny<Func<IQueryable<Block>, IQueryable<Block>>?>()
             ))
-            .ReturnsAsync(CreateRealBlock());
+            .ReturnsAsync(CreateNormalBlock());
 
         _unitOfWorkMock
             .SetupSequence(x => x.ContainerPositionRepository.FirstOrDefaultAsync(
@@ -385,10 +355,8 @@ public class ContainerTransactionServiceTests
             .Setup(x => x.ContainerPositionRepository.AddAsync(It.IsAny<ContainerPosition>()))
             .Returns(Task.CompletedTask);
 
-        // Act
         var result = await _service.ImportContainer(request);
 
-        // Assert
         Assert.Equal(1, result);
         Assert.Equal("InYard", container.CurrentStatus);
 
@@ -408,7 +376,6 @@ public class ContainerTransactionServiceTests
     [Fact]
     public async Task ExportContainer_WhenContainerDoesNotExist_ShouldThrowUserFriendlyException()
     {
-        // Arrange
         var request = CreateValidExportRequest();
 
         _unitOfWorkMock
@@ -418,19 +385,16 @@ public class ContainerTransactionServiceTests
             ))
             .ReturnsAsync((Container?)null);
 
-        // Act
         var exception = await Assert.ThrowsAsync<UserFriendlyException>(
             () => _service.ExportContainer(request)
         );
 
-        // Assert
         Assert.Equal("Container not found", exception.Message);
     }
 
     [Fact]
     public async Task ExportContainer_WhenContainerIsNotInYard_ShouldThrowValidationException()
     {
-        // Arrange
         var request = CreateValidExportRequest();
         var container = CreateContainer();
         container.CurrentStatus = "OutYard";
@@ -442,7 +406,6 @@ public class ContainerTransactionServiceTests
             ))
             .ReturnsAsync(container);
 
-        // Act & Assert
         await Assert.ThrowsAsync<ValidationException>(
             () => _service.ExportContainer(request)
         );
@@ -451,7 +414,6 @@ public class ContainerTransactionServiceTests
     [Fact]
     public async Task ExportContainer_WhenDeliveryOrderDoesNotExist_ShouldThrowUserFriendlyException()
     {
-        // Arrange
         var request = CreateValidExportRequest();
         var container = CreateContainer();
         container.CurrentStatus = "InYard";
@@ -470,19 +432,16 @@ public class ContainerTransactionServiceTests
             ))
             .ReturnsAsync((DeliveryOrder?)null);
 
-        // Act
         var exception = await Assert.ThrowsAsync<UserFriendlyException>(
             () => _service.ExportContainer(request)
         );
 
-        // Assert
         Assert.Equal("Delivery order not found", exception.Message);
     }
 
     [Fact]
     public async Task ExportContainer_WhenDeliveryOrderExpired_ShouldThrowValidationException()
     {
-        // Arrange
         var request = CreateValidExportRequest();
         var container = CreateContainer();
         container.CurrentStatus = "InYard";
@@ -504,7 +463,6 @@ public class ContainerTransactionServiceTests
             ))
             .ReturnsAsync(deliveryOrder);
 
-        // Act & Assert
         await Assert.ThrowsAsync<ValidationException>(
             () => _service.ExportContainer(request)
         );
@@ -513,7 +471,6 @@ public class ContainerTransactionServiceTests
     [Fact]
     public async Task ExportContainer_WhenLineOperatorDoesNotMatch_ShouldThrowValidationException()
     {
-        // Arrange
         var request = CreateValidExportRequest();
         var container = CreateContainer();
         container.CurrentStatus = "InYard";
@@ -536,7 +493,6 @@ public class ContainerTransactionServiceTests
             ))
             .ReturnsAsync(deliveryOrder);
 
-        // Act & Assert
         await Assert.ThrowsAsync<ValidationException>(
             () => _service.ExportContainer(request)
         );
@@ -545,7 +501,6 @@ public class ContainerTransactionServiceTests
     [Fact]
     public async Task ExportContainer_WhenCurrentPositionDoesNotExist_ShouldThrowValidationException()
     {
-        // Arrange
         var request = CreateValidExportRequest();
         var container = CreateContainer();
         container.CurrentStatus = "InYard";
@@ -571,7 +526,6 @@ public class ContainerTransactionServiceTests
             ))
             .ReturnsAsync((ContainerPosition?)null);
 
-        // Act & Assert
         await Assert.ThrowsAsync<ValidationException>(
             () => _service.ExportContainer(request)
         );
@@ -580,7 +534,6 @@ public class ContainerTransactionServiceTests
     [Fact]
     public async Task ExportContainer_WhenRequestIsValid_ShouldCreateOutTransactionAndDeletePosition()
     {
-        // Arrange
         var request = CreateValidExportRequest();
         var container = CreateContainer();
         container.CurrentStatus = "InYard";
@@ -617,10 +570,8 @@ public class ContainerTransactionServiceTests
             .Callback<ContainerTransaction>(transaction => transaction.Id = 1)
             .Returns(Task.CompletedTask);
 
-        // Act
         var result = await _service.ExportContainer(request);
 
-        // Assert
         Assert.Equal(1, result);
         Assert.Equal("OutYard", container.CurrentStatus);
 
@@ -737,7 +688,7 @@ public class ContainerTransactionServiceTests
         };
     }
 
-    private static Block CreateRealBlock()
+    private static Block CreateNormalBlock()
     {
         return new Block
         {
@@ -745,7 +696,7 @@ public class ContainerTransactionServiceTests
             DepotId = 1,
             BlockCode = "A",
             BlockName = "Block A",
-            BlockType = "Real",
+            BlockType = "Normal",
             MaxBay = 10,
             MaxRow = 10,
             MaxTier = 5

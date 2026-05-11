@@ -54,7 +54,8 @@ public class BlockService(IUnitOfWork unitOfWork, IMapper mapper) : IBlockServic
         if (depot == null)
             throw new UserFriendlyException(ErrorCode.NotFound, "Depot not found");
 
-        ValidateBlockType(request.BlockType, request.MaxBay, request.MaxRow, request.MaxTier);
+        var normalizedBlockType = NormalizeBlockType(request.BlockType);
+        ValidateBlockType(normalizedBlockType, request.MaxBay, request.MaxRow, request.MaxTier);
 
         var isExist = await _unitOfWork.BlockRepository.AnyAsync(x =>
             x.DepotId == request.DepotId && x.BlockCode == request.BlockCode);
@@ -63,6 +64,7 @@ public class BlockService(IUnitOfWork unitOfWork, IMapper mapper) : IBlockServic
             throw new UserFriendlyException(ErrorCode.Conflict, "Block code already exists in this depot");
 
         var block = _mapper.Map<Block>(request);
+        block.BlockType = normalizedBlockType;
 
         await _unitOfWork.ExecuteTransactionAsync(async () =>
             await _unitOfWork.BlockRepository.AddAsync(block), CancellationToken.None);
@@ -77,7 +79,8 @@ public class BlockService(IUnitOfWork unitOfWork, IMapper mapper) : IBlockServic
         if (block == null)
             throw new UserFriendlyException(ErrorCode.NotFound, "Block not found");
 
-        ValidateBlockType(request.BlockType, request.MaxBay, request.MaxRow, request.MaxTier);
+        var normalizedBlockType = NormalizeBlockType(request.BlockType);
+        ValidateBlockType(normalizedBlockType, request.MaxBay, request.MaxRow, request.MaxTier);
 
         var depot = await _unitOfWork.DepotRepository.FirstOrDefaultAsync(x => x.Id == request.DepotId);
 
@@ -95,7 +98,7 @@ public class BlockService(IUnitOfWork unitOfWork, IMapper mapper) : IBlockServic
         block.DepotId = request.DepotId;
         block.BlockCode = request.BlockCode;
         block.BlockName = request.BlockName;
-        block.BlockType = request.BlockType;
+        block.BlockType = normalizedBlockType;
         block.MaxBay = request.MaxBay;
         block.MaxRow = request.MaxRow;
         block.MaxTier = request.MaxTier;
@@ -111,23 +114,64 @@ public class BlockService(IUnitOfWork unitOfWork, IMapper mapper) : IBlockServic
         if (string.IsNullOrWhiteSpace(blockType))
             throw BuildValidationException("Block type is required");
 
-        if (blockType != "Real" && blockType != "Virtual")
-            throw BuildValidationException("Block type must be Real or Virtual");
+        if (!IsValidBlockType(blockType))
+            throw BuildValidationException("Block type must be Normal, Special, Electric, Damaged or Virtual");
 
-        if (blockType == "Real")
+        if (IsPhysicalBlockType(blockType))
         {
             if (!maxBay.HasValue || !maxRow.HasValue || !maxTier.HasValue)
-                throw BuildValidationException("Real block must have MaxBay, MaxRow and MaxTier");
+                throw BuildValidationException("Normal, Special, Electric and Damaged blocks must have MaxBay, MaxRow and MaxTier");
 
             if (maxBay <= 0 || maxRow <= 0 || maxTier <= 0)
-                throw BuildValidationException("MaxBay, MaxRow and MaxTier must be greater than 0 for real block");
+                throw BuildValidationException("MaxBay, MaxRow and MaxTier must be greater than 0 for Normal, Special, Electric and Damaged blocks");
         }
 
-        if (blockType == "Virtual")
+        if (IsVirtualBlockType(blockType))
         {
             if (maxBay.HasValue || maxRow.HasValue || maxTier.HasValue)
                 throw BuildValidationException("Virtual block must not have MaxBay, MaxRow or MaxTier");
         }
+    }
+
+    private static bool IsValidBlockType(string blockType)
+    {
+        return IsPhysicalBlockType(blockType) || IsVirtualBlockType(blockType);
+    }
+
+    private static bool IsPhysicalBlockType(string blockType)
+    {
+        return string.Equals(blockType, "Normal", StringComparison.OrdinalIgnoreCase)
+               || string.Equals(blockType, "Special", StringComparison.OrdinalIgnoreCase)
+               || string.Equals(blockType, "Electric", StringComparison.OrdinalIgnoreCase)
+               || string.Equals(blockType, "Damaged", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static bool IsVirtualBlockType(string blockType)
+    {
+        return string.Equals(blockType, "Virtual", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static string NormalizeBlockType(string blockType)
+    {
+        if (string.IsNullOrWhiteSpace(blockType))
+            return string.Empty;
+
+        if (string.Equals(blockType, "Normal", StringComparison.OrdinalIgnoreCase))
+            return "Normal";
+
+        if (string.Equals(blockType, "Special", StringComparison.OrdinalIgnoreCase))
+            return "Special";
+
+        if (string.Equals(blockType, "Electric", StringComparison.OrdinalIgnoreCase))
+            return "Electric";
+
+        if (string.Equals(blockType, "Damaged", StringComparison.OrdinalIgnoreCase))
+            return "Damaged";
+
+        if (string.Equals(blockType, "Virtual", StringComparison.OrdinalIgnoreCase))
+            return "Virtual";
+
+        return blockType.Trim();
     }
 
     private static ValidationException BuildValidationException(string message)
