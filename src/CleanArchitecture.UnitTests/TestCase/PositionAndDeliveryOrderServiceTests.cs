@@ -149,6 +149,12 @@ public class PositionAndDeliveryOrderServiceTests
             .ReturnsAsync(CreateNormalBlock());
 
         _unitOfWorkMock
+            .Setup(x => x.ContainerPositionRepository.FirstOrDefaultAsync(
+                It.IsAny<Expression<Func<ContainerPosition, bool>>>(),
+                It.IsAny<Func<IQueryable<ContainerPosition>, IQueryable<ContainerPosition>>?>()))
+            .ReturnsAsync((ContainerPosition?)null);
+
+        _unitOfWorkMock
             .Setup(x => x.ContainerPositionRepository.AddAsync(It.IsAny<ContainerPosition>()))
             .Callback<ContainerPosition>(position => position.Id = 1)
             .Returns(Task.CompletedTask);
@@ -205,10 +211,12 @@ public class PositionAndDeliveryOrderServiceTests
         var position = CreateContainerPosition();
 
         _unitOfWorkMock
-            .Setup(x => x.ContainerPositionRepository.FirstOrDefaultAsync(
+            .SetupSequence(x => x.ContainerPositionRepository.FirstOrDefaultAsync(
                 It.IsAny<Expression<Func<ContainerPosition, bool>>>(),
                 It.IsAny<Func<IQueryable<ContainerPosition>, IQueryable<ContainerPosition>>?>()))
-            .ReturnsAsync(position);
+            .ReturnsAsync(position)
+            .ReturnsAsync((ContainerPosition?)null)
+            .ReturnsAsync((ContainerPosition?)null);
 
         _unitOfWorkMock
             .Setup(x => x.ContainerRepository.FirstOrDefaultAsync(
@@ -228,13 +236,13 @@ public class PositionAndDeliveryOrderServiceTests
             BlockId = 1,
             Bay = 2,
             Row = 3,
-            Tier = 4,
+            Tier = 1,
             PositionTime = new DateTime(2026, 1, 2)
         });
 
         Assert.Equal(2, position.Bay);
         Assert.Equal(3, position.Row);
-        Assert.Equal(4, position.Tier);
+        Assert.Equal(1, position.Tier);
 
         _unitOfWorkMock.Verify(
             x => x.ContainerPositionRepository.Update(It.IsAny<ContainerPosition>()),

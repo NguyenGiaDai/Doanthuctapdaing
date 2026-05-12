@@ -139,15 +139,21 @@ public class ContainerTransactionService(
         if (container.ContainerTypeNavigation?.ContainerSize == 40 && request.ToBay % 2 != 0)
             throw BuildValidationException("40ft container must be placed in an even bay");
 
-        var occupiedPosition = await _unitOfWork.ContainerPositionRepository.FirstOrDefaultAsync(
-            x => x.BlockId == request.ToBlockId
-                 && x.Bay == request.ToBay
-                 && x.Row == request.ToRow
-                 && x.Tier == request.ToTier
-                 && x.ContainerId != request.ContainerId);
+        await ValidatePositionIsEmpty(
+            request.ToBlockId,
+            request.ToBay,
+            request.ToRow,
+            request.ToTier,
+            request.ContainerId);
 
-        if (occupiedPosition != null)
-            throw BuildValidationException("This yard position is already occupied by another container");
+        await ValidateTierStackingForPlacement(
+            block.BlockType,
+            container.ContainerClassification,
+            request.ToBlockId,
+            request.ToBay,
+            request.ToRow,
+            request.ToTier,
+            request.ContainerId);
 
         var existingPosition = await _unitOfWork.ContainerPositionRepository
             .FirstOrDefaultAsync(x => x.ContainerId == request.ContainerId);
@@ -235,6 +241,13 @@ public class ContainerTransactionService(
 
         if (currentPosition == null)
             throw BuildValidationException("Container is not currently in yard");
+
+        await ValidateTierStackingForRemoval(
+            currentPosition.BlockId,
+            currentPosition.Bay,
+            currentPosition.Row,
+            currentPosition.Tier,
+            currentPosition.ContainerId);
 
         var transaction = new ContainerTransaction
         {
@@ -410,6 +423,16 @@ public class ContainerTransactionService(
                 fromRow,
                 fromTier,
                 "From");
+
+            if (IsPhysicalBlockType(fromBlock.BlockType))
+            {
+                await ValidateTierStackingForRemoval(
+                    fromBlockId.Value,
+                    fromBay!.Value,
+                    fromRow!.Value,
+                    fromTier!.Value,
+                    containerId);
+            }
         }
 
         if (toBlockId.HasValue)
@@ -430,6 +453,25 @@ public class ContainerTransactionService(
                 "To");
 
             ValidateContainerAllowedInBlock(toBlock.BlockType, container.ContainerClassification, container.ContainerCondition);
+
+            if (IsPhysicalBlockType(toBlock.BlockType))
+            {
+                await ValidatePositionIsEmpty(
+                    toBlockId.Value,
+                    toBay!.Value,
+                    toRow!.Value,
+                    toTier!.Value,
+                    containerId);
+
+                await ValidateTierStackingForPlacement(
+                    toBlock.BlockType,
+                    container.ContainerClassification,
+                    toBlockId.Value,
+                    toBay.Value,
+                    toRow.Value,
+                    toTier.Value,
+                    containerId);
+            }
         }
     }
 
@@ -472,6 +514,77 @@ public class ContainerTransactionService(
             if (maxBay.HasValue || maxRow.HasValue || maxTier.HasValue)
                 throw BuildValidationException("Virtual block must not have MaxBay, MaxRow or MaxTier");
         }
+    }
+
+    private async Task ValidatePositionIsEmpty(
+        int blockId,
+        int bay,
+        int row,
+        int tier,
+        int containerId)
+    {
+        var occupiedPosition = await _unitOfWork.ContainerPositionRepository.FirstOrDefaultAsync(
+            x => x.BlockId == blockId
+                 && x.Bay == bay
+                 && x.Row == row
+                 && x.Tier == tier
+                 && x.ContainerId != containerId);
+
+        if (occupiedPosition != null)
+            throw BuildValidationException("This yard position is already occupied by another container");
+    }
+
+    private async Task ValidateTierStackingForPlacement(
+        string blockType,
+        string? containerClassification,
+        int blockId,
+        int bay,
+        int row,
+        int targetTier,
+        int containerId)
+    {
+        if (!IsPhysicalBlockType(blockType))
+            return;
+
+        if (string.Equals(containerClassification, "B", StringComparison.OrdinalIgnoreCase)
+            && targetTier > 1)
+            throw BuildValidationException("Classification B containers can only be placed at tier 1");
+
+        if (targetTier <= 1)
+            return;
+
+        for (var tier = 1; tier < targetTier; tier++)
+        {
+            var lowerPosition = await _unitOfWork.ContainerPositionRepository.FirstOrDefaultAsync(
+                x => x.BlockId == blockId
+                     && x.Bay == bay
+                     && x.Row == row
+                     && x.Tier == tier
+                     && x.ContainerId != containerId);
+
+            if (lowerPosition == null)
+                throw BuildValidationException(
+                    $"Cannot place container at tier {targetTier} because tier {tier} below is empty at the same block, bay and row");
+        }
+    }
+
+    private async Task ValidateTierStackingForRemoval(
+        int blockId,
+        int bay,
+        int row,
+        int currentTier,
+        int containerId)
+    {
+        var upperPosition = await _unitOfWork.ContainerPositionRepository.FirstOrDefaultAsync(
+            x => x.BlockId == blockId
+                 && x.Bay == bay
+                 && x.Row == row
+                 && x.Tier > currentTier
+                 && x.ContainerId != containerId);
+
+        if (upperPosition != null)
+            throw BuildValidationException(
+                $"Cannot remove container from tier {currentTier} because another container is stacked above it at tier {upperPosition.Tier}");
     }
 
     private static void ValidateContainerAllowedInBlock(

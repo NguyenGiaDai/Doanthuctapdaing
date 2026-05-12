@@ -172,6 +172,13 @@ public class ContainerTransactionServiceTests
             .ReturnsAsync(CreateNormalBlock());
 
         _unitOfWorkMock
+            .Setup(x => x.ContainerPositionRepository.FirstOrDefaultAsync(
+                It.IsAny<Expression<Func<ContainerPosition, bool>>>(),
+                It.IsAny<Func<IQueryable<ContainerPosition>, IQueryable<ContainerPosition>>?>()
+            ))
+            .ReturnsAsync((ContainerPosition?)null);
+
+        _unitOfWorkMock
             .Setup(x => x.ExecuteTransactionAsync(It.IsAny<Func<Task>>(), It.IsAny<CancellationToken>()))
             .Returns<Func<Task>, CancellationToken>(async (action, _) => await action());
 
@@ -555,11 +562,12 @@ public class ContainerTransactionServiceTests
             .ReturnsAsync(CreateDeliveryOrder());
 
         _unitOfWorkMock
-            .Setup(x => x.ContainerPositionRepository.FirstOrDefaultAsync(
+            .SetupSequence(x => x.ContainerPositionRepository.FirstOrDefaultAsync(
                 It.IsAny<Expression<Func<ContainerPosition, bool>>>(),
                 It.IsAny<Func<IQueryable<ContainerPosition>, IQueryable<ContainerPosition>>?>()
             ))
-            .ReturnsAsync(currentPosition);
+            .ReturnsAsync(currentPosition)
+            .ReturnsAsync((ContainerPosition?)null);
 
         _unitOfWorkMock
             .Setup(x => x.ExecuteTransactionAsync(It.IsAny<Func<Task>>(), It.IsAny<CancellationToken>()))
