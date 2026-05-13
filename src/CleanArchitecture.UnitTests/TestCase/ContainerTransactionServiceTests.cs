@@ -506,6 +506,49 @@ public class ContainerTransactionServiceTests
     }
 
     [Fact]
+    public async Task ExportContainer_WhenDeliveryOrderQuantityFullyUsed_ShouldThrowValidationException()
+    {
+        var request = CreateValidExportRequest();
+        var container = CreateContainer();
+        container.CurrentStatus = "InYard";
+
+        var deliveryOrder = CreateDeliveryOrder();
+        deliveryOrder.Quantity = 1;
+
+        _unitOfWorkMock
+            .Setup(x => x.ContainerRepository.FirstOrDefaultAsync(
+                It.IsAny<Expression<Func<Container, bool>>>(),
+                It.IsAny<Func<IQueryable<Container>, IQueryable<Container>>?>()
+            ))
+            .ReturnsAsync(container);
+
+        _unitOfWorkMock
+            .Setup(x => x.DeliveryOrderRepository.FirstOrDefaultAsync(
+                It.IsAny<Expression<Func<DeliveryOrder, bool>>>(),
+                It.IsAny<Func<IQueryable<DeliveryOrder>, IQueryable<DeliveryOrder>>?>()
+            ))
+            .ReturnsAsync(deliveryOrder);
+
+        _unitOfWorkMock
+            .Setup(x => x.ContainerTransactionRepository.CountAsync(
+                It.IsAny<Expression<Func<ContainerTransaction, bool>>>()
+            ))
+            .ReturnsAsync(1);
+
+        await Assert.ThrowsAsync<ValidationException>(
+            () => _service.ExportContainer(request)
+        );
+
+        _unitOfWorkMock.Verify(
+            x => x.ContainerPositionRepository.Delete(It.IsAny<ContainerPosition>()),
+            Times.Never);
+
+        _unitOfWorkMock.Verify(
+            x => x.ContainerTransactionRepository.AddAsync(It.IsAny<ContainerTransaction>()),
+            Times.Never);
+    }
+
+    [Fact]
     public async Task ExportContainer_WhenCurrentPositionDoesNotExist_ShouldThrowValidationException()
     {
         var request = CreateValidExportRequest();
@@ -525,6 +568,12 @@ public class ContainerTransactionServiceTests
                 It.IsAny<Func<IQueryable<DeliveryOrder>, IQueryable<DeliveryOrder>>?>()
             ))
             .ReturnsAsync(CreateDeliveryOrder());
+
+        _unitOfWorkMock
+            .Setup(x => x.ContainerTransactionRepository.CountAsync(
+                It.IsAny<Expression<Func<ContainerTransaction, bool>>>()
+            ))
+            .ReturnsAsync(0);
 
         _unitOfWorkMock
             .Setup(x => x.ContainerPositionRepository.FirstOrDefaultAsync(
@@ -562,6 +611,12 @@ public class ContainerTransactionServiceTests
             .ReturnsAsync(CreateDeliveryOrder());
 
         _unitOfWorkMock
+            .Setup(x => x.ContainerTransactionRepository.CountAsync(
+                It.IsAny<Expression<Func<ContainerTransaction, bool>>>()
+            ))
+            .ReturnsAsync(0);
+
+        _unitOfWorkMock
             .SetupSequence(x => x.ContainerPositionRepository.FirstOrDefaultAsync(
                 It.IsAny<Expression<Func<ContainerPosition, bool>>>(),
                 It.IsAny<Func<IQueryable<ContainerPosition>, IQueryable<ContainerPosition>>?>()
@@ -584,7 +639,12 @@ public class ContainerTransactionServiceTests
         Assert.Equal("OutYard", container.CurrentStatus);
 
         _unitOfWorkMock.Verify(
-            x => x.ContainerTransactionRepository.AddAsync(It.IsAny<ContainerTransaction>()),
+            x => x.ContainerTransactionRepository.AddAsync(It.Is<ContainerTransaction>(
+                transaction =>
+                    transaction.ContainerId == request.ContainerId &&
+                    transaction.DeliveryOrderId == request.DeliveryOrderId &&
+                    transaction.TransactionType == "Out"
+            )),
             Times.Once);
 
         _unitOfWorkMock.Verify(
@@ -649,6 +709,7 @@ public class ContainerTransactionServiceTests
         {
             Id = id,
             ContainerId = 1,
+            DeliveryOrderId = null,
             TransactionType = "In",
             FromBlockId = null,
             FromBay = null,

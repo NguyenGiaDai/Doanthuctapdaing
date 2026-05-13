@@ -76,6 +76,11 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
                 .HasForeignKey(x => x.ContainerId)
                 .OnDelete(DeleteBehavior.Restrict);
 
+            entity.HasOne(x => x.DeliveryOrder)
+                .WithMany(x => x.ContainerTransactions)
+                .HasForeignKey(x => x.DeliveryOrderId)
+                .OnDelete(DeleteBehavior.Restrict);
+
             entity.HasOne(x => x.FromBlock)
                 .WithMany(x => x.FromContainerTransactions)
                 .HasForeignKey(x => x.FromBlockId)

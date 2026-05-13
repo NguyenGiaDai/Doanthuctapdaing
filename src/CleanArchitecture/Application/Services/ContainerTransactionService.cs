@@ -236,6 +236,12 @@ public class ContainerTransactionService(
         if (container.ContainerTypeId != deliveryOrder.ContainerTypeId)
             throw BuildValidationException("Delivery order container type does not match container type");
 
+        var usedQuantity = await _unitOfWork.ContainerTransactionRepository.CountAsync(x =>
+            x.TransactionType == "Out" && x.DeliveryOrderId == request.DeliveryOrderId);
+
+        if (usedQuantity >= deliveryOrder.Quantity)
+            throw BuildValidationException("Delivery order quantity has been fully used and cannot be used for export");
+
         var currentPosition = await _unitOfWork.ContainerPositionRepository
             .FirstOrDefaultAsync(x => x.ContainerId == request.ContainerId);
 
@@ -252,6 +258,7 @@ public class ContainerTransactionService(
         var transaction = new ContainerTransaction
         {
             ContainerId = request.ContainerId,
+            DeliveryOrderId = request.DeliveryOrderId,
             TransactionType = "Out",
             FromBlockId = currentPosition.BlockId,
             FromBay = currentPosition.Bay,

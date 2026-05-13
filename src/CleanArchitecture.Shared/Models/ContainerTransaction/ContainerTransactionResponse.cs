@@ -5,6 +5,9 @@ public class ContainerTransactionResponse
     public int Id { get; set; }
 
     public int ContainerId { get; set; }
+
+    public int? DeliveryOrderId { get; set; }
+
     public string TransactionType { get; set; } = string.Empty;
 
     public int? FromBlockId { get; set; }

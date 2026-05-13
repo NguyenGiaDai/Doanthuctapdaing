@@ -19,4 +19,6 @@ public class DeliveryOrder
     public ContainerType? ContainerType { get; set; }
     public LineOperator? LineOperator { get; set; }
     public Customer? Customer { get; set; }
+
+    public ICollection<ContainerTransaction> ContainerTransactions { get; set; } = new List<ContainerTransaction>();
 }

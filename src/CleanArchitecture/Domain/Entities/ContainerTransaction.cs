@@ -6,6 +6,8 @@ public class ContainerTransaction
 
     public int ContainerId { get; set; }
 
+    public int? DeliveryOrderId { get; set; }
+
     // In / Out / Move
     public string TransactionType { get; set; } = string.Empty;
 
@@ -26,6 +28,7 @@ public class ContainerTransaction
     public string? Note { get; set; }
 
     public Container? Container { get; set; }
+    public DeliveryOrder? DeliveryOrder { get; set; }
     public Block? FromBlock { get; set; }
     public Block? ToBlock { get; set; }
 }
