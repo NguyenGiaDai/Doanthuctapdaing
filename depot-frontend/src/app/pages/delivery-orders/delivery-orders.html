@@ -1,1 +1,197 @@
-<p>delivery-orders works!</p>
+<div class="delivery-orders-page">
+  <section class="page-header">
+    <div>
+      <p class="page-kicker">DELIVERY ORDER</p>
+      <h1>Quản lý lệnh giao container</h1>
+      <p class="page-description">
+        Theo dõi danh sách Delivery Order phục vụ nghiệp vụ xuất container khỏi depot.
+      </p>
+    </div>
+  </section>
+
+  <section class="filter-card">
+    <div class="filter-card-header">
+      <div>
+        <h2>Bộ lọc Delivery Order</h2>
+        <p>Tra cứu theo số DO, khách hàng, hãng khai thác, loại container hoặc chuyến tàu.</p>
+      </div>
+
+      <button type="button" class="clear-filter-button" (click)="clearFilters()">
+        Đặt lại
+      </button>
+    </div>
+
+    <div class="filter-grid">
+      <label class="search-box">
+        <span>Tìm kiếm</span>
+        <input
+          type="text"
+          placeholder="Nhập số DO, khách hàng, hãng khai thác..."
+          [(ngModel)]="searchKeyword"
+          (input)="applyFilters()"
+        />
+      </label>
+
+      <label class="filter-box">
+        <span>Trạng thái DO</span>
+        <select [(ngModel)]="selectedStatus" (change)="applyFilters()">
+          <option *ngFor="let status of statusOptions" [value]="status">
+            {{ status }}
+          </option>
+        </select>
+      </label>
+
+      <label class="filter-box">
+        <span>Hiệu lực</span>
+        <select [(ngModel)]="selectedExpiryStatus" (change)="applyFilters()">
+          <option value="All Expiry">Tất cả</option>
+          <option value="Valid">Còn hạn</option>
+          <option value="Expired">Hết hạn</option>
+        </select>
+      </label>
+    </div>
+  </section>
+
+  <section *ngIf="isLoading" class="state-card">
+    Đang tải danh sách Delivery Order...
+  </section>
+
+  <section *ngIf="errorMessage" class="state-card error-card">
+    {{ errorMessage }}
+  </section>
+
+  <section *ngIf="!isLoading && !errorMessage" class="content-grid">
+    <article class="table-panel">
+      <div class="panel-header">
+        <div>
+          <h2>Danh sách Delivery Order</h2>
+          <p>
+            Hiển thị {{ filteredDeliveryOrders.length }} /
+            {{ deliveryOrders.length }} lệnh giao container.
+          </p>
+        </div>
+
+        <span class="record-count">
+          {{ filteredDeliveryOrders.length }} DO
+        </span>
+      </div>
+
+      <div class="table-scroll">
+        <table class="data-table">
+          <thead>
+          <tr>
+            <th>Số DO</th>
+            <th>Khách hàng</th>
+            <th>Hãng khai thác</th>
+            <th>Loại container</th>
+            <th>SL</th>
+            <th>Ngày lệnh</th>
+            <th>Hết hạn</th>
+            <th>Trạng thái</th>
+          </tr>
+          </thead>
+
+          <tbody>
+          <tr
+            *ngFor="let order of filteredDeliveryOrders"
+            [class.selected-row]="selectedDeliveryOrder?.id === order.id"
+            (click)="selectDeliveryOrder(order)"
+          >
+            <td>
+              <strong>{{ order.doNumber }}</strong>
+            </td>
+            <td>{{ normalizeText(order.customerName) }}</td>
+            <td>{{ normalizeText(order.lineOperatorName) }}</td>
+            <td>{{ normalizeText(order.containerTypeName) }}</td>
+            <td>{{ order.quantity }}</td>
+            <td>{{ formatDate(order.orderDate) }}</td>
+            <td>
+                <span class="badge" [ngClass]="getExpiryClass(order)">
+                  {{ getExpiryDisplayName(order) }}
+                </span>
+            </td>
+            <td>
+                <span class="badge" [ngClass]="getOrderStatusClass(order.orderStatus)">
+                  {{ getOrderStatusDisplayName(order.orderStatus) }}
+                </span>
+            </td>
+          </tr>
+
+          <tr *ngIf="filteredDeliveryOrders.length === 0">
+            <td colspan="8" class="empty-row">
+              Không tìm thấy Delivery Order phù hợp.
+            </td>
+          </tr>
+          </tbody>
+        </table>
+      </div>
+    </article>
+
+    <aside class="detail-panel">
+      <ng-container *ngIf="selectedDeliveryOrder; else emptyDetail">
+        <div class="detail-header">
+          <div>
+            <p>DO ĐANG CHỌN</p>
+            <h2>{{ selectedDeliveryOrder.doNumber }}</h2>
+          </div>
+
+          <span class="badge" [ngClass]="getExpiryClass(selectedDeliveryOrder)">
+            {{ getExpiryDisplayName(selectedDeliveryOrder) }}
+          </span>
+        </div>
+
+        <div class="detail-section">
+          <h3>Thông tin lệnh</h3>
+
+          <div class="detail-list">
+            <div>
+              <span>Khách hàng</span>
+              <strong>{{ normalizeText(selectedDeliveryOrder.customerName) }}</strong>
+            </div>
+
+            <div>
+              <span>Hãng khai thác</span>
+              <strong>{{ normalizeText(selectedDeliveryOrder.lineOperatorName) }}</strong>
+            </div>
+
+            <div>
+              <span>Loại container</span>
+              <strong>{{ normalizeText(selectedDeliveryOrder.containerTypeName) }}</strong>
+            </div>
+
+            <div>
+              <span>Số lượng</span>
+              <strong>{{ selectedDeliveryOrder.quantity }}</strong>
+            </div>
+
+            <div>
+              <span>Ngày lệnh</span>
+              <strong>{{ formatDate(selectedDeliveryOrder.orderDate) }}</strong>
+            </div>
+
+            <div>
+              <span>Ngày hết hạn</span>
+              <strong>{{ formatDate(selectedDeliveryOrder.expiryDate) }}</strong>
+            </div>
+
+            <div>
+              <span>Tàu / chuyến</span>
+              <strong>{{ normalizeText(selectedDeliveryOrder.vesselVoyage) }}</strong>
+            </div>
+
+            <div>
+              <span>Trạng thái</span>
+              <strong>{{ getOrderStatusDisplayName(selectedDeliveryOrder.orderStatus) }}</strong>
+            </div>
+          </div>
+        </div>
+      </ng-container>
+
+      <ng-template #emptyDetail>
+        <div class="empty-detail">
+          Chọn một Delivery Order trong bảng để xem chi tiết.
+        </div>
+      </ng-template>
+    </aside>
+  </section>
+</div>
