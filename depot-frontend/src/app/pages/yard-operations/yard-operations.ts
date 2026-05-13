@@ -14,11 +14,13 @@ import {
   UpdateContainerPositionRequest,
 } from '../../models/container-position.model';
 import { DeliveryOrderResponse } from '../../models/delivery-order.model';
+import { BlockResponse } from '../../models/block.model';
 
 import { ContainerService } from '../../services/container.service';
 import { ContainerTransactionService } from '../../services/container-transaction.service';
 import { ContainerPositionService } from '../../services/container-position.service';
 import { DeliveryOrderService } from '../../services/delivery-order.service';
+import { BlockService } from '../../services/block.service';
 
 type YardOperationTab = 'import' | 'export' | 'move' | 'history';
 
@@ -45,10 +47,12 @@ export class YardOperations implements OnInit {
   containers: ContainerResponse[] = [];
   deliveryOrders: DeliveryOrderResponse[] = [];
   containerPositions: ContainerPositionResponse[] = [];
+  blocks: BlockResponse[] = [];
 
   isLoadingContainers = false;
   isLoadingDeliveryOrders = false;
   isLoadingPositions = false;
+  isLoadingBlocks = false;
 
   isLoadingHistory = false;
   historyErrorMessage = '';
@@ -109,6 +113,7 @@ export class YardOperations implements OnInit {
     private readonly containerTransactionService: ContainerTransactionService,
     private readonly containerPositionService: ContainerPositionService,
     private readonly deliveryOrderService: DeliveryOrderService,
+    private readonly blockService: BlockService,
     private readonly changeDetectorRef: ChangeDetectorRef
   ) {}
 
@@ -116,6 +121,7 @@ export class YardOperations implements OnInit {
     this.loadContainers();
     this.loadDeliveryOrders();
     this.loadContainerPositions();
+    this.loadBlocks();
   }
 
   loadContainers(): void {
@@ -187,6 +193,26 @@ export class YardOperations implements OnInit {
 
         this.containerPositions = [];
         this.isLoadingPositions = false;
+        this.changeDetectorRef.detectChanges();
+      },
+    });
+  }
+
+  loadBlocks(): void {
+    this.isLoadingBlocks = true;
+    this.changeDetectorRef.detectChanges();
+
+    this.blockService.getBlocks(1, 100).subscribe({
+      next: (response) => {
+        this.blocks = response.items ?? [];
+        this.isLoadingBlocks = false;
+        this.changeDetectorRef.detectChanges();
+      },
+      error: (error) => {
+        console.error('Load blocks failed:', error);
+
+        this.blocks = [];
+        this.isLoadingBlocks = false;
         this.changeDetectorRef.detectChanges();
       },
     });
@@ -686,6 +712,120 @@ export class YardOperations implements OnInit {
     this.moveErrorMessage = '';
 
     this.changeDetectorRef.detectChanges();
+  }
+
+  onImportBlockChanged(): void {
+    this.importSuccessMessage = '';
+    this.importErrorMessage = '';
+    this.changeDetectorRef.detectChanges();
+  }
+
+  getSelectedImportBlock(): BlockResponse | undefined {
+    if (!this.importForm.toBlockId) {
+      return undefined;
+    }
+
+    return this.blocks.find((block) => block.id === this.importForm.toBlockId);
+  }
+
+  getYardContainerDisplayText(container: ContainerResponse): string {
+    const containerType = container.containerTypeCode || container.containerTypeName || 'N/A';
+    const condition = this.getContainerConditionDisplayName(container.containerCondition);
+    const status = container.currentStatus || 'N/A';
+
+    return `${container.containerNumber} - ${containerType} - ${condition} - ${status}`;
+  }
+
+  getContainerConditionDisplayName(condition: string | null | undefined): string {
+    const normalizedCondition = condition?.toLowerCase();
+
+    if (normalizedCondition === 'normal' || normalizedCondition === 'good') {
+      return 'Good';
+    }
+
+    if (normalizedCondition === 'damaged') {
+      return 'Damaged';
+    }
+
+    if (normalizedCondition === 'inspection') {
+      return 'Inspection';
+    }
+
+    return condition || 'N/A';
+  }
+
+  getBlockTypeDisplayName(blockType: string | null | undefined): string {
+    const normalizedBlockType = blockType?.toLowerCase();
+
+    if (normalizedBlockType === 'normal') {
+      return 'Normal - Block thường';
+    }
+
+    if (normalizedBlockType === 'special') {
+      return 'Special - Block hàng đặc biệt';
+    }
+
+    if (normalizedBlockType === 'electric') {
+      return 'Electric - Block điện';
+    }
+
+    if (normalizedBlockType === 'damaged') {
+      return 'Damaged - Block hư hỏng';
+    }
+
+    if (normalizedBlockType === 'virtual') {
+      return 'Virtual - Block ảo';
+    }
+
+    return blockType || 'Không xác định';
+  }
+
+  getBlockTypeClass(blockType: string | null | undefined): string {
+    const normalizedBlockType = blockType?.toLowerCase();
+
+    if (normalizedBlockType === 'electric') {
+      return 'electric';
+    }
+
+    if (normalizedBlockType === 'damaged') {
+      return 'damaged';
+    }
+
+    if (normalizedBlockType === 'special') {
+      return 'special';
+    }
+
+    if (normalizedBlockType === 'virtual') {
+      return 'virtual';
+    }
+
+    return 'normal';
+  }
+
+  getBlockBusinessHint(blockType: string | null | undefined): string {
+    const normalizedBlockType = blockType?.toLowerCase();
+
+    if (normalizedBlockType === 'normal') {
+      return 'Nhận container phân loại A.';
+    }
+
+    if (normalizedBlockType === 'special') {
+      return 'Nhận container phân loại B.';
+    }
+
+    if (normalizedBlockType === 'electric') {
+      return 'Nhận container lạnh, phân loại C.';
+    }
+
+    if (normalizedBlockType === 'damaged') {
+      return 'Nhận container có tình trạng Damaged.';
+    }
+
+    if (normalizedBlockType === 'virtual') {
+      return 'Block ảo, không kiểm soát Bay / Row / Tier vật lý.';
+    }
+
+    return 'Chưa xác định quy tắc block.';
   }
 
   getSelectedImportContainer(): ContainerResponse | undefined {

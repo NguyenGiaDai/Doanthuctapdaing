@@ -127,8 +127,8 @@
 
 .filter-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1.8fr) minmax(180px, 0.9fr) minmax(220px, 1fr) minmax(200px, 1fr);
-  gap: 24px;
+  grid-template-columns: minmax(0, 1.8fr) minmax(160px, 0.8fr) minmax(190px, 0.9fr) minmax(180px, 0.9fr);
+  gap: 20px;
   align-items: end;
 }
 
@@ -183,14 +183,17 @@
 
 .content-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 360px;
-  gap: 24px;
-  align-items: start;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: 22px;
+  align-items: stretch;
 }
 
 .table-panel {
+  height: 660px;
   padding: 24px;
-  overflow-x: auto;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 .panel-header {
@@ -198,7 +201,8 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: 16px;
-  margin-bottom: 22px;
+  margin-bottom: 18px;
+  flex: 0 0 auto;
 }
 
 .record-count {
@@ -214,28 +218,104 @@
   white-space: nowrap;
 }
 
+.table-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  border: 1px solid #e2e8f0;
+  border-radius: 18px;
+}
+
+.table-scroll::-webkit-scrollbar {
+  width: 10px;
+}
+
+.table-scroll::-webkit-scrollbar-track {
+  background: #f8fafc;
+  border-radius: 999px;
+}
+
+.table-scroll::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 999px;
+  border: 2px solid #f8fafc;
+}
+
+.table-scroll::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
 .data-table {
   width: 100%;
+  min-width: 0;
+  table-layout: fixed;
   border-collapse: collapse;
-  min-width: 880px;
 }
 
 .data-table th {
-  padding: 14px 12px;
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  padding: 12px 10px;
   background: #f8fafc;
   color: #64748b;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 800;
   text-align: left;
   border-bottom: 1px solid #e2e8f0;
+  white-space: nowrap;
 }
 
 .data-table td {
-  padding: 14px 12px;
+  padding: 12px 10px;
   color: #334155;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 700;
   border-bottom: 1px solid #edf2f7;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.data-table th:nth-child(1),
+.data-table td:nth-child(1) {
+  width: 23%;
+}
+
+.data-table th:nth-child(2),
+.data-table td:nth-child(2) {
+  width: 10%;
+}
+
+.data-table th:nth-child(3),
+.data-table td:nth-child(3) {
+  width: 10%;
+}
+
+.data-table th:nth-child(4),
+.data-table td:nth-child(4) {
+  width: 11%;
+}
+
+.data-table th:nth-child(5),
+.data-table td:nth-child(5) {
+  width: 12%;
+}
+
+.data-table th:nth-child(6),
+.data-table td:nth-child(6) {
+  width: 12%;
+}
+
+.data-table th:nth-child(7),
+.data-table td:nth-child(7) {
+  width: 9%;
+}
+
+.data-table th:nth-child(8),
+.data-table td:nth-child(8) {
+  width: 13%;
 }
 
 .data-table tbody tr {
@@ -255,11 +335,13 @@
 .condition {
   display: inline-flex;
   align-items: center;
+  max-width: 100%;
   min-height: 24px;
   padding: 0 9px;
   border-radius: 999px;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 800;
+  white-space: nowrap;
 }
 
 .status.in-yard {
@@ -299,9 +381,28 @@
 }
 
 .detail-panel {
+  height: 660px;
   padding: 24px;
   position: sticky;
   top: 24px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.detail-panel::-webkit-scrollbar {
+  width: 8px;
+}
+
+.detail-panel::-webkit-scrollbar-track {
+  background: #f8fafc;
+  border-radius: 999px;
+}
+
+.detail-panel::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 999px;
+  border: 2px solid #f8fafc;
 }
 
 .detail-header {
@@ -311,6 +412,7 @@
   gap: 14px;
   padding-bottom: 22px;
   border-bottom: 1px solid #e2e8f0;
+  flex: 0 0 auto;
 }
 
 .detail-header p {
@@ -328,6 +430,7 @@
 .detail-section {
   padding: 22px 0;
   border-bottom: 1px solid #e2e8f0;
+  flex: 0 0 auto;
 }
 
 .detail-section h3 {
@@ -360,7 +463,9 @@
 .detail-actions {
   display: flex;
   gap: 12px;
-  margin-top: 22px;
+  margin-top: auto;
+  padding-top: 22px;
+  flex: 0 0 auto;
 }
 
 .detail-actions button {
@@ -469,6 +574,14 @@
 .form-grid select:focus {
   border-color: #2563eb;
   box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
+}
+
+.field-help {
+  display: block;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.45;
 }
 
 .form-message {
@@ -608,8 +721,22 @@
     grid-template-columns: 1fr;
   }
 
+  .table-panel,
+  .detail-panel {
+    height: auto;
+    min-height: 0;
+  }
+
+  .table-scroll {
+    max-height: 520px;
+  }
+
   .detail-panel {
     position: static;
+  }
+
+  .detail-actions {
+    margin-top: 22px;
   }
 }
 

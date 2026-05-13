@@ -44,7 +44,7 @@ export class Containers implements OnInit {
 
   totalCount = 0;
   currentPage = 1;
-  pageSize = 10;
+  pageSize = 100;
 
   searchKeyword = '';
   selectedStatus = 'All Status';
@@ -81,7 +81,7 @@ export class Containers implements OnInit {
     lineOperatorId: null as number | null,
     dateOfManufacture: '',
     containerOwner: '',
-    containerCondition: 'Normal',
+    containerCondition: 'Good',
     containerClassification: 'A',
     currentStatus: 'OutYard',
   };
@@ -104,21 +104,41 @@ export class Containers implements OnInit {
     this.errorMessage = '';
     this.changeDetectorRef.detectChanges();
 
-    this.containerService.getContainers(0, this.pageSize).subscribe({
-      next: (response) => {
-        console.log('Container API response:', response);
+    this.containerService.getContainers(1, this.pageSize).subscribe({
+      next: (firstResponse) => {
+        console.log('Container API first page response:', firstResponse);
 
-        this.allContainers = response.items ?? [];
-        this.containers = [...this.allContainers];
+        const firstPageItems = firstResponse.items ?? [];
+        const totalPages = firstResponse.totalPages ?? 1;
 
-        this.totalCount = this.containers.length;
-        this.currentPage = response.currentPage ?? 1;
+        if (totalPages <= 1) {
+          this.setLoadedContainers(firstPageItems, firstResponse.totalCount ?? firstPageItems.length);
+          return;
+        }
 
-        this.buildFilterOptions();
-        this.applyFiltersAfterReload();
+        const remainingPageRequests = [];
 
-        this.isLoading = false;
-        this.changeDetectorRef.detectChanges();
+        for (let pageIndex = 2; pageIndex <= totalPages; pageIndex++) {
+          remainingPageRequests.push(this.containerService.getContainers(pageIndex, this.pageSize));
+        }
+
+        forkJoin(remainingPageRequests).subscribe({
+          next: (remainingResponses) => {
+            const remainingItems = remainingResponses.flatMap((response) => response.items ?? []);
+            const allItems = [...firstPageItems, ...remainingItems];
+
+            this.setLoadedContainers(allItems, firstResponse.totalCount ?? allItems.length);
+          },
+          error: (error) => {
+            console.error('Load remaining container pages failed:', error);
+
+            this.errorMessage =
+              'Không tải được đầy đủ danh sách container. Hãy kiểm tra backend Docker, proxy hoặc Network tab.';
+
+            this.isLoading = false;
+            this.changeDetectorRef.detectChanges();
+          },
+        });
       },
       error: (error) => {
         console.error('Load containers failed:', error);
@@ -130,6 +150,22 @@ export class Containers implements OnInit {
         this.changeDetectorRef.detectChanges();
       },
     });
+  }
+
+  private setLoadedContainers(items: ContainerResponse[], totalRecords: number): void {
+    this.allContainers = items;
+    this.containers = [...this.allContainers];
+
+    this.totalCount = this.containers.length;
+    this.currentPage = 1;
+
+    this.buildFilterOptions();
+    this.applyFiltersAfterReload();
+
+    console.log(`Loaded ${this.allContainers.length}/${totalRecords} containers for client-side search.`);
+
+    this.isLoading = false;
+    this.changeDetectorRef.detectChanges();
   }
 
   loadContainerDropdowns(): void {
@@ -186,7 +222,7 @@ export class Containers implements OnInit {
       lineOperatorId: container.lineOperatorId || null,
       dateOfManufacture: this.toDateInputValue(container.dateOfManufacture),
       containerOwner: container.containerOwner ?? '',
-      containerCondition: container.containerCondition || 'Normal',
+      containerCondition: this.normalizeContainerCondition(container.containerCondition),
       containerClassification: container.containerClassification || 'A',
       currentStatus: container.currentStatus || 'OutYard',
     };
@@ -322,7 +358,7 @@ export class Containers implements OnInit {
 
         this.containerFormErrorMessage = this.getApiErrorMessage(
           error,
-          'Không thêm được container. Hãy kiểm tra dữ liệu nhập hoặc backend.'
+          'Không khai báo được container. Hãy kiểm tra dữ liệu nhập hoặc backend.'
         );
 
         this.isSubmittingContainer = false;
@@ -419,7 +455,7 @@ export class Containers implements OnInit {
       lineOperatorId: null,
       dateOfManufacture: '',
       containerOwner: '',
-      containerCondition: 'Normal',
+      containerCondition: 'Good',
       containerClassification: 'A',
       currentStatus: 'OutYard',
     };
@@ -505,7 +541,7 @@ export class Containers implements OnInit {
       .filter((line): line is string => !!line);
 
     const conditions = this.allContainers
-      .map((container) => container.containerCondition)
+      .map((container) => this.getConditionDisplayName(container.containerCondition))
       .filter((condition): condition is string => !!condition);
 
     this.statusOptions = ['All Status', ...new Set(statuses)];
@@ -536,9 +572,10 @@ export class Containers implements OnInit {
         this.selectedLineOperator === 'All Lines' ||
         currentLine === this.selectedLineOperator;
 
+      const currentCondition = this.getConditionDisplayName(container.containerCondition);
       const matchesCondition =
         this.selectedCondition === 'All Conditions' ||
-        container.containerCondition === this.selectedCondition;
+        currentCondition === this.selectedCondition;
 
       return matchesKeyword && matchesStatus && matchesLineOperator && matchesCondition;
     });
@@ -691,6 +728,42 @@ export class Containers implements OnInit {
     }
 
     return '';
+  }
+
+  getConditionDisplayName(condition: string | null | undefined): string {
+    const normalizedCondition = condition?.toLowerCase();
+
+    if (normalizedCondition === 'normal' || normalizedCondition === 'good') {
+      return 'Good';
+    }
+
+    if (normalizedCondition === 'damaged') {
+      return 'Damaged';
+    }
+
+    if (normalizedCondition === 'inspection') {
+      return 'Inspection';
+    }
+
+    return condition || '-';
+  }
+
+  private normalizeContainerCondition(condition: string | null | undefined): string {
+    const normalizedCondition = condition?.toLowerCase();
+
+    if (normalizedCondition === 'normal' || normalizedCondition === 'good') {
+      return 'Good';
+    }
+
+    if (normalizedCondition === 'damaged') {
+      return 'Damaged';
+    }
+
+    if (normalizedCondition === 'inspection') {
+      return 'Inspection';
+    }
+
+    return 'Good';
   }
 
   private buildPreviousPosition(

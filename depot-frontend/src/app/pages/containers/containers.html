@@ -9,7 +9,7 @@
     </div>
 
     <button type="button" class="primary-button" (click)="openAddContainerModal()">
-      Thêm container
+      Khai báo container
     </button>
   </section>
 
@@ -69,8 +69,8 @@
     <form class="container-form-card" (ngSubmit)="submitContainerForm()">
       <div class="form-header">
         <div>
-          <p>{{ isEditMode ? 'CẬP NHẬT CONTAINER' : 'CONTAINER MỚI' }}</p>
-          <h2>{{ isEditMode ? 'Chỉnh sửa container' : 'Thêm container' }}</h2>
+          <p>{{ isEditMode ? 'CẬP NHẬT CONTAINER' : 'KHAI BÁO CONTAINER' }}</p>
+          <h2>{{ isEditMode ? 'Chỉnh sửa container' : 'Khai báo container' }}</h2>
         </div>
 
         <button type="button" class="icon-button" (click)="closeContainerModal()">
@@ -158,10 +158,9 @@
             [(ngModel)]="containerForm.containerCondition"
             [disabled]="isSubmittingContainer"
           >
-            <option value="Normal">Normal</option>
-            <option value="Good">Good</option>
-            <option value="Damaged">Damaged</option>
-            <option value="Inspection">Inspection</option>
+            <option value="Good">Good - bình thường</option>
+            <option value="Damaged">Damaged - hư hỏng, cần xử lý</option>
+            <option value="Inspection">Inspection - chờ kiểm định</option>
           </select>
         </label>
 
@@ -176,6 +175,12 @@
             <option value="B">B</option>
             <option value="C">C</option>
           </select>
+
+          <small class="field-help">
+            A: Khô, Hở, Bunker ·
+            B: Mở nắp, Flat Rack, Đặc biệt ·
+            C: Lạnh
+          </small>
         </label>
 
         <label>
@@ -212,7 +217,7 @@
               ? 'Đang lưu...'
               : isEditMode
                 ? 'Cập nhật container'
-                : 'Lưu container'
+                : 'Khai báo container'
           }}
         </button>
       </div>
@@ -353,51 +358,53 @@
         <span class="record-count">{{ totalCount }} bản ghi</span>
       </div>
 
-      <table class="data-table">
-        <thead>
-        <tr>
-          <th>Số container</th>
-          <th>Loại</th>
-          <th>Mã ISO</th>
-          <th>Kích thước</th>
-          <th>Hãng</th>
-          <th>Tình trạng</th>
-          <th>Phân loại</th>
-          <th>Trạng thái</th>
-        </tr>
-        </thead>
+      <div class="table-scroll">
+        <table class="data-table">
+          <thead>
+          <tr>
+            <th>Số container</th>
+            <th>Loại</th>
+            <th>Mã ISO</th>
+            <th>Kích thước</th>
+            <th>Hãng</th>
+            <th>Tình trạng</th>
+            <th>Phân loại</th>
+            <th>Trạng thái</th>
+          </tr>
+          </thead>
 
-        <tbody>
-        <tr
-          *ngFor="let container of containers"
-          [class.selected-row]="selectedContainer?.id === container.id"
-          (click)="selectContainer(container)"
-        >
-          <td><strong>{{ container.containerNumber }}</strong></td>
-          <td>{{ container.containerTypeCode || '-' }}</td>
-          <td>{{ container.isoCode || '-' }}</td>
-          <td>{{ container.containerSize }} ft</td>
-          <td>{{ container.lineOperatorCode || container.lineOperatorName || '-' }}</td>
-          <td>
-            <span class="condition" [ngClass]="getConditionClass(container.containerCondition)">
-              {{ container.containerCondition || '-' }}
-            </span>
-          </td>
-          <td>{{ container.containerClassification || '-' }}</td>
-          <td>
-            <span class="status" [ngClass]="getStatusClass(container.currentStatus)">
-              {{ container.currentStatus || '-' }}
-            </span>
-          </td>
-        </tr>
+          <tbody>
+          <tr
+            *ngFor="let container of containers"
+            [class.selected-row]="selectedContainer?.id === container.id"
+            (click)="selectContainer(container)"
+          >
+            <td><strong>{{ container.containerNumber }}</strong></td>
+            <td>{{ container.containerTypeCode || '-' }}</td>
+            <td>{{ container.isoCode || '-' }}</td>
+            <td>{{ container.containerSize }} ft</td>
+            <td>{{ container.lineOperatorCode || container.lineOperatorName || '-' }}</td>
+            <td>
+              <span class="condition" [ngClass]="getConditionClass(container.containerCondition)">
+                {{ getConditionDisplayName(container.containerCondition) }}
+              </span>
+            </td>
+            <td>{{ container.containerClassification || '-' }}</td>
+            <td>
+              <span class="status" [ngClass]="getStatusClass(container.currentStatus)">
+                {{ container.currentStatus || '-' }}
+              </span>
+            </td>
+          </tr>
 
-        <tr *ngIf="containers.length === 0">
-          <td colspan="8" class="empty-cell">
-            Không tìm thấy container phù hợp với bộ lọc hiện tại.
-          </td>
-        </tr>
-        </tbody>
-      </table>
+          <tr *ngIf="containers.length === 0">
+            <td colspan="8" class="empty-cell">
+              Không tìm thấy container phù hợp với bộ lọc hiện tại.
+            </td>
+          </tr>
+          </tbody>
+        </table>
+      </div>
     </article>
 
     <aside class="detail-panel" *ngIf="selectedContainer as container; else emptyDetail">
@@ -469,7 +476,7 @@
 
         <div class="detail-row">
           <span>Tình trạng</span>
-          <strong>{{ container.containerCondition || '-' }}</strong>
+          <strong>{{ getConditionDisplayName(container.containerCondition) }}</strong>
         </div>
       </div>
 

@@ -36,7 +36,7 @@
 
 .operation-tabs {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 14px;
 }
 
@@ -250,6 +250,54 @@
   box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
 }
 
+.block-field {
+  position: relative;
+}
+
+.block-note {
+  position: absolute;
+  left: 50%;
+  top: 35px;
+  z-index: 2;
+  transform: translateX(-50%);
+  max-width: calc(100% - 36px);
+  padding: 0 8px;
+  background: #ffffff;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 900;
+  line-height: 1.2;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  pointer-events: none;
+}
+
+.block-note.normal {
+  color: #2563eb;
+}
+
+.block-note.special {
+  color: #7c3aed;
+}
+
+.block-note.electric {
+  color: #15803d;
+}
+
+.block-note.damaged {
+  color: #b91c1c;
+}
+
+.block-note.virtual {
+  color: #475569;
+}
+
+.block-note.error {
+  color: #b91c1c;
+}
+
 .form-actions {
   display: flex;
   justify-content: flex-end;
@@ -278,6 +326,7 @@
   cursor: not-allowed;
   transform: none;
 }
+
 .history-search-card {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
@@ -338,6 +387,7 @@
   color: #64748b !important;
   font-weight: 800 !important;
 }
+
 .history-table-wrap {
   overflow-x: auto;
 }
@@ -369,6 +419,7 @@
 .history-table tbody tr:hover {
   background: #f8fafc;
 }
+
 .move-position-layout {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -513,6 +564,7 @@
   .primary-button {
     width: 100%;
   }
+
   .history-search-card {
     grid-template-columns: 1fr;
   }
