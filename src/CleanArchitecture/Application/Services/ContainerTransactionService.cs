@@ -227,8 +227,13 @@ public class ContainerTransactionService(
         if (deliveryOrder == null)
             throw new UserFriendlyException(ErrorCode.NotFound, "Delivery order not found");
 
+        var deliveryOrderStatus = await ResolveAndPersistDeliveryOrderStatus(deliveryOrder);
+
         if (deliveryOrder.ExpiryDate.Date < DateTime.UtcNow.Date)
             throw BuildValidationException("Delivery order has expired and cannot be used for export");
+
+        if (!string.Equals(deliveryOrderStatus, "Active", StringComparison.OrdinalIgnoreCase))
+            throw BuildValidationException("Only active delivery orders can be used for export");
 
         if (container.LineOperatorId != deliveryOrder.LineOperatorId)
             throw BuildValidationException("Delivery order line operator does not match container line operator");
@@ -635,6 +640,40 @@ public class ContainerTransactionService(
     private static bool IsVirtualBlockType(string blockType)
     {
         return string.Equals(blockType, "Virtual", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private async Task<string> ResolveAndPersistDeliveryOrderStatus(DeliveryOrder deliveryOrder)
+    {
+        var resolvedStatus = ResolveDeliveryOrderStatus(deliveryOrder.OrderStatus, deliveryOrder.ExpiryDate);
+
+        if (!string.Equals(deliveryOrder.OrderStatus, resolvedStatus, StringComparison.Ordinal))
+        {
+            deliveryOrder.OrderStatus = resolvedStatus;
+
+            await _unitOfWork.ExecuteTransactionAsync(() =>
+            {
+                _unitOfWork.DeliveryOrderRepository.Update(deliveryOrder);
+            }, CancellationToken.None);
+        }
+
+        return resolvedStatus;
+    }
+
+    private static string ResolveDeliveryOrderStatus(string? orderStatus, DateTime expiryDate)
+    {
+        var normalizedStatus = string.IsNullOrWhiteSpace(orderStatus)
+            ? "Active"
+            : orderStatus.Trim();
+
+        if (expiryDate.Date < DateTime.UtcNow.Date && !IsCompletedDeliveryOrderStatus(normalizedStatus))
+            return "Cancelled";
+
+        return normalizedStatus;
+    }
+
+    private static bool IsCompletedDeliveryOrderStatus(string? orderStatus)
+    {
+        return string.Equals(orderStatus?.Trim(), "Completed", StringComparison.OrdinalIgnoreCase);
     }
 
     private static ValidationException BuildValidationException(string message)
