@@ -3,34 +3,27 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
 import { PaginationResponse } from '../models/container.model';
-import {
-  CreateDeliveryOrderRequest,
-  DeliveryOrderResponse,
-} from '../models/delivery-order.model';
+import { CustomerResponse } from '../models/customer.model';
 
 @Injectable({
   providedIn: 'root',
 })
-export class DeliveryOrderService {
-  private readonly apiUrl = '/api/DeliveryOrder';
+export class CustomerService {
+  private readonly apiUrl = '/api/Customer';
 
   constructor(private readonly http: HttpClient) {}
 
-  getDeliveryOrders(
+  getCustomers(
     pageNumber = 1,
     pageSize = 100
-  ): Observable<PaginationResponse<DeliveryOrderResponse>> {
+  ): Observable<PaginationResponse<CustomerResponse>> {
     const params = new HttpParams()
       .set('pageNumber', pageNumber)
       .set('pageSize', pageSize);
 
-    return this.http.get<PaginationResponse<DeliveryOrderResponse>>(
+    return this.http.get<PaginationResponse<CustomerResponse>>(
       this.apiUrl,
       { params }
     );
-  }
-
-  createDeliveryOrder(request: CreateDeliveryOrderRequest): Observable<number> {
-    return this.http.post<number>(this.apiUrl, request);
   }
 }

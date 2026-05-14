@@ -7,6 +7,10 @@
         Theo dõi danh sách Delivery Order phục vụ nghiệp vụ xuất container khỏi depot.
       </p>
     </div>
+
+    <button type="button" class="primary-button" (click)="openCreateModal()">
+      Tạo Delivery Order
+    </button>
   </section>
 
   <section class="filter-card">
@@ -128,15 +132,15 @@
     </article>
 
     <aside class="detail-panel">
-      <ng-container *ngIf="selectedDeliveryOrder; else emptyDetail">
+      <ng-container *ngIf="selectedDeliveryOrder as selectedOrder; else emptyDetail">
         <div class="detail-header">
           <div>
             <p>DO ĐANG CHỌN</p>
-            <h2>{{ selectedDeliveryOrder.doNumber }}</h2>
+            <h2>{{ selectedOrder.doNumber }}</h2>
           </div>
 
-          <span class="badge" [ngClass]="getExpiryClass(selectedDeliveryOrder)">
-            {{ getExpiryDisplayName(selectedDeliveryOrder) }}
+          <span class="badge" [ngClass]="getExpiryClass(selectedOrder)">
+            {{ getExpiryDisplayName(selectedOrder) }}
           </span>
         </div>
 
@@ -146,42 +150,42 @@
           <div class="detail-list">
             <div>
               <span>Khách hàng</span>
-              <strong>{{ normalizeText(selectedDeliveryOrder.customerName) }}</strong>
+              <strong>{{ normalizeText(selectedOrder.customerName) }}</strong>
             </div>
 
             <div>
               <span>Hãng khai thác</span>
-              <strong>{{ normalizeText(selectedDeliveryOrder.lineOperatorName) }}</strong>
+              <strong>{{ normalizeText(selectedOrder.lineOperatorName) }}</strong>
             </div>
 
             <div>
               <span>Loại container</span>
-              <strong>{{ normalizeText(selectedDeliveryOrder.containerTypeName) }}</strong>
+              <strong>{{ normalizeText(selectedOrder.containerTypeName) }}</strong>
             </div>
 
             <div>
               <span>Số lượng</span>
-              <strong>{{ selectedDeliveryOrder.quantity }}</strong>
+              <strong>{{ selectedOrder.quantity }}</strong>
             </div>
 
             <div>
               <span>Ngày lệnh</span>
-              <strong>{{ formatDate(selectedDeliveryOrder.orderDate) }}</strong>
+              <strong>{{ formatDate(selectedOrder.orderDate) }}</strong>
             </div>
 
             <div>
               <span>Ngày hết hạn</span>
-              <strong>{{ formatDate(selectedDeliveryOrder.expiryDate) }}</strong>
+              <strong>{{ formatDate(selectedOrder.expiryDate) }}</strong>
             </div>
 
             <div>
               <span>Tàu / chuyến</span>
-              <strong>{{ normalizeText(selectedDeliveryOrder.vesselVoyage) }}</strong>
+              <strong>{{ normalizeText(selectedOrder.vesselVoyage) }}</strong>
             </div>
 
             <div>
               <span>Trạng thái</span>
-              <strong>{{ getOrderStatusDisplayName(selectedDeliveryOrder.orderStatus) }}</strong>
+              <strong>{{ getOrderStatusDisplayName(selectedOrder.orderStatus) }}</strong>
             </div>
           </div>
         </div>
@@ -194,4 +198,153 @@
       </ng-template>
     </aside>
   </section>
+
+  <div
+    *ngIf="isCreateModalOpen"
+    class="modal-backdrop"
+    (click)="closeCreateModal()"
+  >
+    <section class="modal-card" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <div>
+          <p>TẠO MỚI</p>
+          <h2>Tạo Delivery Order</h2>
+        </div>
+
+        <button type="button" class="icon-button" (click)="closeCreateModal()">
+          ×
+        </button>
+      </div>
+
+      <form class="create-form" (ngSubmit)="submitCreateDeliveryOrder()">
+        <section *ngIf="masterDataErrorMessage" class="form-error">
+          {{ masterDataErrorMessage }}
+        </section>
+
+        <section *ngIf="createErrorMessage" class="form-error">
+          {{ createErrorMessage }}
+        </section>
+
+        <div class="form-grid">
+          <label>
+            <span>Số DO</span>
+            <input
+              type="text"
+              name="doNumber"
+              placeholder="Ví dụ: DO_TEST_001"
+              [(ngModel)]="createForm.doNumber"
+            />
+          </label>
+
+          <label>
+            <span>Số lượng</span>
+            <input
+              type="number"
+              min="1"
+              name="quantity"
+              [(ngModel)]="createForm.quantity"
+            />
+          </label>
+
+          <label>
+            <span>Khách hàng</span>
+            <select
+              name="customerId"
+              [(ngModel)]="createForm.customerId"
+              [disabled]="isLoadingMasterData"
+            >
+              <option [ngValue]="null">Chọn khách hàng</option>
+              <option *ngFor="let customer of customers" [ngValue]="customer.id">
+                {{ getCustomerDisplayName(customer) }}
+              </option>
+            </select>
+          </label>
+
+          <label>
+            <span>Hãng khai thác</span>
+            <select
+              name="lineOperatorId"
+              [(ngModel)]="createForm.lineOperatorId"
+              [disabled]="isLoadingMasterData"
+            >
+              <option [ngValue]="null">Chọn hãng khai thác</option>
+              <option *ngFor="let lineOperator of lineOperators" [ngValue]="lineOperator.id">
+                {{ getLineOperatorDisplayName(lineOperator) }}
+              </option>
+            </select>
+          </label>
+
+          <label>
+            <span>Loại container</span>
+            <select
+              name="containerTypeId"
+              [(ngModel)]="createForm.containerTypeId"
+              [disabled]="isLoadingMasterData"
+            >
+              <option [ngValue]="null">Chọn loại container</option>
+              <option *ngFor="let containerType of containerTypes" [ngValue]="containerType.id">
+                {{ getContainerTypeDisplayName(containerType) }}
+              </option>
+            </select>
+          </label>
+
+          <label>
+            <span>Trạng thái</span>
+            <select name="orderStatus" [(ngModel)]="createForm.orderStatus">
+              <option *ngFor="let status of createStatusOptions" [value]="status">
+                {{ status }}
+              </option>
+            </select>
+          </label>
+
+          <label>
+            <span>Ngày lệnh</span>
+            <input
+              type="date"
+              name="orderDate"
+              [(ngModel)]="createForm.orderDate"
+            />
+          </label>
+
+          <label>
+            <span>Ngày hết hạn</span>
+            <input
+              type="date"
+              name="expiryDate"
+              [(ngModel)]="createForm.expiryDate"
+            />
+          </label>
+
+          <label class="full-width">
+            <span>Tàu / chuyến</span>
+            <input
+              type="text"
+              name="vesselVoyage"
+              placeholder="Ví dụ: MV TEST 001"
+              [(ngModel)]="createForm.vesselVoyage"
+            />
+          </label>
+        </div>
+
+        <div class="modal-actions">
+          <button
+            type="button"
+            class="secondary-button"
+            (click)="closeCreateModal()"
+            [disabled]="isSubmitting"
+          >
+            Hủy
+          </button>
+
+          <button
+            type="submit"
+            class="primary-button"
+            [disabled]="isSubmitting || isLoadingMasterData"
+          >
+            {{ isSubmitting ? 'Đang tạo...' : 'Tạo Delivery Order' }}
+          </button>
+        </div>
+      </form>
+    </section>
+  </div>
 </div>

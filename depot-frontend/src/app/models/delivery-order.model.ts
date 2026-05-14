@@ -17,3 +17,15 @@ export interface DeliveryOrderResponse {
   vesselVoyage: string | null;
   orderStatus: string | null;
 }
+
+export interface CreateDeliveryOrderRequest {
+  doNumber: string;
+  customerId: number;
+  lineOperatorId: number;
+  containerTypeId: number;
+  quantity: number;
+  expiryDate: string;
+  orderDate: string | null;
+  vesselVoyage: string | null;
+  orderStatus: string | null;
+}
