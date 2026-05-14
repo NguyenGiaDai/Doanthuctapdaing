@@ -486,6 +486,10 @@ export class YardOperations implements OnInit {
       return 'Delivery Order không tồn tại trong danh sách.';
     }
 
+    if (!this.isDeliveryOrderActive(selectedDeliveryOrder)) {
+      return 'Chỉ Delivery Order đang Active mới được xuất container.';
+    }
+
     if (this.isDeliveryOrderExpired(selectedDeliveryOrder)) {
       return 'Delivery Order đã hết hạn, không thể xuất container.';
     }
@@ -873,15 +877,21 @@ export class YardOperations implements OnInit {
   getFilteredDeliveryOrders(): DeliveryOrderResponse[] {
     const selectedContainer = this.getSelectedExportContainer();
 
-    if (!selectedContainer) {
-      return this.deliveryOrders.filter((order) => !this.isDeliveryOrderExpired(order));
-    }
-
     return this.deliveryOrders.filter((order) => {
+      const isValidDeliveryOrder =
+        this.isDeliveryOrderActive(order) && !this.isDeliveryOrderExpired(order);
+
+      if (!isValidDeliveryOrder) {
+        return false;
+      }
+
+      if (!selectedContainer) {
+        return true;
+      }
+
       return (
         order.lineOperatorId === selectedContainer.lineOperatorId &&
-        order.containerTypeId === selectedContainer.containerTypeId &&
-        !this.isDeliveryOrderExpired(order)
+        order.containerTypeId === selectedContainer.containerTypeId
       );
     });
   }
@@ -1073,6 +1083,10 @@ export class YardOperations implements OnInit {
     return value === null || value === undefined;
   }
 
+  private isDeliveryOrderActive(order: DeliveryOrderResponse): boolean {
+    return order.orderStatus?.trim().toLowerCase() === 'active';
+  }
+
   private isDeliveryOrderExpired(order: DeliveryOrderResponse): boolean {
     if (!order.expiryDate) {
       return false;
@@ -1111,6 +1125,26 @@ export class YardOperations implements OnInit {
 
   private normalizeApiErrorMessage(message: string): string {
     return message
+      .replace(
+        /Only active delivery orders can be used for export/g,
+        'Chỉ Delivery Order đang Active mới được xuất container'
+      )
+      .replace(
+        /Delivery order has expired and cannot be used for export/g,
+        'Delivery Order đã hết hạn, không thể xuất container'
+      )
+      .replace(
+        /Delivery order quantity has been fully used and cannot be used for export/g,
+        'Delivery Order đã dùng hết số lượng, không thể xuất thêm container'
+      )
+      .replace(
+        /Delivery order line operator does not match container line operator/g,
+        'Delivery Order không cùng hãng khai thác với container'
+      )
+      .replace(
+        /Delivery order container type does not match container type/g,
+        'Delivery Order không đúng loại container'
+      )
       .replace(/ToBlockId/g, 'Block')
       .replace(/toBlockId/g, 'Block')
       .replace(/BlockId/g, 'Block')
