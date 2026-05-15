@@ -201,8 +201,17 @@
 
 .table-panel,
 .detail-panel {
-  min-height: 520px;
+  min-height: 720px;
   padding: 20px 24px;
+}
+
+.table-panel {
+  display: flex;
+  flex-direction: column;
+}
+
+.detail-panel {
+  overflow: visible;
 }
 
 .record-count {
@@ -219,7 +228,8 @@
 }
 
 .table-scroll {
-  max-height: 450px;
+  flex: 1;
+  min-height: 0;
   margin-top: 16px;
   overflow: auto;
   border: 1px solid #eef2f7;
@@ -230,6 +240,21 @@
   width: 100%;
   border-collapse: collapse;
   table-layout: fixed;
+}
+
+.data-table th:nth-child(7),
+.data-table td:nth-child(7) {
+  width: 120px;
+}
+
+.data-table th:nth-child(8),
+.data-table td:nth-child(8) {
+  width: 140px;
+}
+
+.data-table td:nth-child(7),
+.data-table td:nth-child(8) {
+  overflow: visible;
 }
 
 .data-table th,
@@ -281,6 +306,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  max-width: 100%;
   min-height: 26px;
   padding: 0 10px;
   border-radius: 999px;
@@ -513,8 +539,17 @@
     grid-template-columns: 1fr;
   }
 
+  .table-panel,
   .detail-panel {
     min-height: auto;
+  }
+
+  .table-scroll {
+    max-height: 520px;
+  }
+
+  .empty-detail {
+    min-height: 240px;
   }
 }
 
