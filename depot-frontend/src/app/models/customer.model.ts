@@ -5,3 +5,10 @@ export interface CustomerResponse {
   customerTaxCode: string | null;
   address: string | null;
 }
+
+export interface CreateCustomerRequest {
+  customerCode: string;
+  customerName: string;
+  customerTaxCode: string | null;
+  address: string | null;
+}

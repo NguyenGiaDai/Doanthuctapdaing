@@ -3,7 +3,10 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
 import { PaginationResponse } from '../models/container.model';
-import { ContainerTypeResponse } from '../models/container-type.model';
+import {
+  ContainerTypeResponse,
+  CreateContainerTypeRequest,
+} from '../models/container-type.model';
 
 @Injectable({
   providedIn: 'root',
@@ -17,5 +20,9 @@ export class ContainerTypeService {
     return this.http.get<PaginationResponse<ContainerTypeResponse>>(
       `${this.apiUrl}?pageNumber=${pageNumber}&pageSize=${pageSize}`
     );
+  }
+
+  createContainerType(request: CreateContainerTypeRequest): Observable<number> {
+    return this.http.post<number>(this.apiUrl, request);
   }
 }

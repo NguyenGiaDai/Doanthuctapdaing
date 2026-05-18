@@ -3,3 +3,8 @@ export interface LineOperatorResponse {
   lineOperatorCode: string;
   lineOperatorName: string;
 }
+
+export interface CreateLineOperatorRequest {
+  lineOperatorCode: string;
+  lineOperatorName: string;
+}

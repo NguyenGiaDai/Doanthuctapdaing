@@ -3,7 +3,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
 import { PaginationResponse } from '../models/container.model';
-import { BlockResponse } from '../models/block.model';
+import { BlockResponse, CreateBlockRequest } from '../models/block.model';
 
 @Injectable({
   providedIn: 'root',
@@ -19,5 +19,9 @@ export class BlockService {
       .set('pageSize', pageSize);
 
     return this.http.get<PaginationResponse<BlockResponse>>(this.apiUrl, { params });
+  }
+
+  createBlock(request: CreateBlockRequest): Observable<number> {
+    return this.http.post<number>(this.apiUrl, request);
   }
 }

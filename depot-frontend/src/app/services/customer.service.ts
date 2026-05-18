@@ -3,7 +3,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
 import { PaginationResponse } from '../models/container.model';
-import { CustomerResponse } from '../models/customer.model';
+import { CreateCustomerRequest, CustomerResponse } from '../models/customer.model';
 
 @Injectable({
   providedIn: 'root',
@@ -25,5 +25,9 @@ export class CustomerService {
       this.apiUrl,
       { params }
     );
+  }
+
+  createCustomer(request: CreateCustomerRequest): Observable<number> {
+    return this.http.post<number>(this.apiUrl, request);
   }
 }
