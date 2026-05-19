@@ -108,14 +108,14 @@ namespace CleanArchitecture.Infrastructure.Migrations
                         {
                             Id = new Guid("69db714f-9576-45ba-b5b7-f00649be01de"),
                             AccessFailedCount = 0,
-                            ConcurrencyStamp = "beb69596-7f7a-4150-b83f-c26fe411db7a",
+                            ConcurrencyStamp = "5e5d22d1-0f6f-44f6-926e-dde81562fa0d",
                             Email = "admin@gmail.com",
                             EmailConfirmed = true,
                             LockoutEnabled = false,
                             Name = "Admin 1",
                             NormalizedEmail = "ADMIN@GMAIL.COM",
                             NormalizedUserName = "admin",
-                            PasswordHash = "AQAAAAIAAYagAAAAEFRvVcaq1XPSnKP9ULtz1SydbglqHOayROrNqAq7Nb4CrKahYze9DKJsmdXXUsJ6Uw==",
+                            PasswordHash = "AQAAAAIAAYagAAAAEM01o1G+r5bI2P1QWcldumm2r+fTgX4oIXT39ARA/Z3Qndjc45PDQmxjbFKDTh83iw==",
                             PhoneNumberConfirmed = false,
                             SecurityStamp = "",
                             Status = 0,
@@ -124,7 +124,7 @@ namespace CleanArchitecture.Infrastructure.Migrations
                         });
                 });
 
-            modelBuilder.Entity("CleanArchitecture.Domain.Entities.Book", b =>
+            modelBuilder.Entity("CleanArchitecture.Domain.Entities.Block", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -132,60 +132,38 @@ namespace CleanArchitecture.Infrastructure.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<string>("Description")
+                    b.Property<string>("BlockCode")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<double?>("Price")
-                        .HasColumnType("float");
-
-                    b.Property<string>("Title")
+                    b.Property<string>("BlockName")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("BlockType")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("DepotId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("MaxBay")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("MaxRow")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("MaxTier")
+                        .HasColumnType("int");
 
                     b.HasKey("Id");
 
-                    b.ToTable("Book", (string)null);
+                    b.HasIndex("DepotId");
 
-                    b.HasData(
-                        new
-                        {
-                            Id = 1,
-                            Description = "A comprehensive guide to C# programming.",
-                            Price = 29.989999999999998,
-                            Title = "C# Programming"
-                        },
-                        new
-                        {
-                            Id = 2,
-                            Description = "Learn how to build web applications using ASP.NET Core.",
-                            Price = 35.5,
-                            Title = "ASP.NET Core Development"
-                        },
-                        new
-                        {
-                            Id = 3,
-                            Description = "Master the Entity Framework Core ORM for .NET development.",
-                            Price = 40.0,
-                            Title = "Entity Framework Core In Action"
-                        },
-                        new
-                        {
-                            Id = 4,
-                            Description = "Everything you need to know about building Blazor WebAssembly applications.",
-                            Price = 45.990000000000002,
-                            Title = "Blazor WebAssembly: The Complete Guide"
-                        },
-                        new
-                        {
-                            Id = 5,
-                            Description = "Implement common design patterns in C# to improve code structure.",
-                            Price = 50.0,
-                            Title = "Design Patterns in C#"
-                        });
+                    b.ToTable("Blocks");
                 });
 
-            modelBuilder.Entity("CleanArchitecture.Domain.Entities.ForgotPassword", b =>
+            modelBuilder.Entity("CleanArchitecture.Domain.Entities.Container", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -193,27 +171,312 @@ namespace CleanArchitecture.Infrastructure.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<DateTime>("DateTime")
+                    b.Property<string>("ContainerClassification")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("ContainerCondition")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<string>("ContainerNumber")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("ContainerOwner")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<int?>("ContainerTypeId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("CurrentStatus")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<DateTime?>("DateOfManufacture")
                         .HasColumnType("datetime2");
 
-                    b.Property<string>("Email")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("OTP")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Token")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<int?>("LineOperatorId")
+                        .HasColumnType("int");
 
                     b.HasKey("Id");
 
-                    b.ToTable("ForgotPassword", (string)null);
+                    b.HasIndex("ContainerTypeId");
+
+                    b.HasIndex("LineOperatorId");
+
+                    b.ToTable("Containers");
+                });
+
+            modelBuilder.Entity("CleanArchitecture.Domain.Entities.ContainerPosition", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("Bay")
+                        .HasColumnType("int");
+
+                    b.Property<int>("BlockId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ContainerId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("PositionTime")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("Row")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Tier")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BlockId");
+
+                    b.HasIndex("ContainerId");
+
+                    b.ToTable("ContainerPositions");
+                });
+
+            modelBuilder.Entity("CleanArchitecture.Domain.Entities.ContainerTransaction", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("ContainerId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("DeliveryOrderId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("FromBay")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("FromBlockId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("FromRow")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("FromTier")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Note")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<int?>("ToBay")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("ToBlockId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("ToRow")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("ToTier")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("TransactionTime")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("TransactionType")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("VehicleNumber")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ContainerId");
+
+                    b.HasIndex("DeliveryOrderId");
+
+                    b.HasIndex("FromBlockId");
+
+                    b.HasIndex("ToBlockId");
+
+                    b.ToTable("ContainerTransactions");
+                });
+
+            modelBuilder.Entity("CleanArchitecture.Domain.Entities.ContainerType", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("ContainerSize")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ContainerTypeCode")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("ContainerTypeName")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<string>("ISOCode")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<decimal?>("MaximumWeight")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal?>("TareWeight")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("ContainerTypes");
+                });
+
+            modelBuilder.Entity("CleanArchitecture.Domain.Entities.Customer", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Address")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("CustomerCode")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("CustomerName")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<string>("CustomerTaxCode")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Customers");
+                });
+
+            modelBuilder.Entity("CleanArchitecture.Domain.Entities.DeliveryOrder", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("ContainerTypeId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("CustomerId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("DONumber")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTime>("ExpiryDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("LineOperatorId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("OrderDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("OrderStatus")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<int>("Quantity")
+                        .HasColumnType("int");
+
+                    b.Property<string>("VesselVoyage")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ContainerTypeId");
+
+                    b.HasIndex("CustomerId");
+
+                    b.HasIndex("LineOperatorId");
+
+                    b.ToTable("DeliveryOrders");
+                });
+
+            modelBuilder.Entity("CleanArchitecture.Domain.Entities.Depot", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Address")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("DepotCode")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("DepotName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Depots");
+                });
+
+            modelBuilder.Entity("CleanArchitecture.Domain.Entities.LineOperator", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("LineOperatorCode")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("LineOperatorName")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("LineOperators");
                 });
 
             modelBuilder.Entity("CleanArchitecture.Domain.Entities.Media", b =>
@@ -469,6 +732,112 @@ namespace CleanArchitecture.Infrastructure.Migrations
                     b.Navigation("Avatar");
                 });
 
+            modelBuilder.Entity("CleanArchitecture.Domain.Entities.Block", b =>
+                {
+                    b.HasOne("CleanArchitecture.Domain.Entities.Depot", "Depot")
+                        .WithMany("Blocks")
+                        .HasForeignKey("DepotId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Depot");
+                });
+
+            modelBuilder.Entity("CleanArchitecture.Domain.Entities.Container", b =>
+                {
+                    b.HasOne("CleanArchitecture.Domain.Entities.ContainerType", "ContainerTypeNavigation")
+                        .WithMany("Containers")
+                        .HasForeignKey("ContainerTypeId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("CleanArchitecture.Domain.Entities.LineOperator", "LineOperator")
+                        .WithMany("Containers")
+                        .HasForeignKey("LineOperatorId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("ContainerTypeNavigation");
+
+                    b.Navigation("LineOperator");
+                });
+
+            modelBuilder.Entity("CleanArchitecture.Domain.Entities.ContainerPosition", b =>
+                {
+                    b.HasOne("CleanArchitecture.Domain.Entities.Block", "Block")
+                        .WithMany("ContainerPositions")
+                        .HasForeignKey("BlockId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("CleanArchitecture.Domain.Entities.Container", "Container")
+                        .WithMany("ContainerPositions")
+                        .HasForeignKey("ContainerId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Block");
+
+                    b.Navigation("Container");
+                });
+
+            modelBuilder.Entity("CleanArchitecture.Domain.Entities.ContainerTransaction", b =>
+                {
+                    b.HasOne("CleanArchitecture.Domain.Entities.Container", "Container")
+                        .WithMany("ContainerTransactions")
+                        .HasForeignKey("ContainerId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("CleanArchitecture.Domain.Entities.DeliveryOrder", "DeliveryOrder")
+                        .WithMany("ContainerTransactions")
+                        .HasForeignKey("DeliveryOrderId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("CleanArchitecture.Domain.Entities.Block", "FromBlock")
+                        .WithMany("FromContainerTransactions")
+                        .HasForeignKey("FromBlockId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("CleanArchitecture.Domain.Entities.Block", "ToBlock")
+                        .WithMany("ToContainerTransactions")
+                        .HasForeignKey("ToBlockId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Container");
+
+                    b.Navigation("DeliveryOrder");
+
+                    b.Navigation("FromBlock");
+
+                    b.Navigation("ToBlock");
+                });
+
+            modelBuilder.Entity("CleanArchitecture.Domain.Entities.DeliveryOrder", b =>
+                {
+                    b.HasOne("CleanArchitecture.Domain.Entities.ContainerType", "ContainerType")
+                        .WithMany("DeliveryOrders")
+                        .HasForeignKey("ContainerTypeId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("CleanArchitecture.Domain.Entities.Customer", "Customer")
+                        .WithMany("DeliveryOrders")
+                        .HasForeignKey("CustomerId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("CleanArchitecture.Domain.Entities.LineOperator", "LineOperator")
+                        .WithMany("DeliveryOrders")
+                        .HasForeignKey("LineOperatorId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("ContainerType");
+
+                    b.Navigation("Customer");
+
+                    b.Navigation("LineOperator");
+                });
+
             modelBuilder.Entity("CleanArchitecture.Domain.Entities.RefreshToken", b =>
                 {
                     b.HasOne("CleanArchitecture.Domain.Entities.ApplicationUser", "User")
@@ -540,6 +909,51 @@ namespace CleanArchitecture.Infrastructure.Migrations
                     b.Navigation("RefreshTokens");
 
                     b.Navigation("UserRoles");
+                });
+
+            modelBuilder.Entity("CleanArchitecture.Domain.Entities.Block", b =>
+                {
+                    b.Navigation("ContainerPositions");
+
+                    b.Navigation("FromContainerTransactions");
+
+                    b.Navigation("ToContainerTransactions");
+                });
+
+            modelBuilder.Entity("CleanArchitecture.Domain.Entities.Container", b =>
+                {
+                    b.Navigation("ContainerPositions");
+
+                    b.Navigation("ContainerTransactions");
+                });
+
+            modelBuilder.Entity("CleanArchitecture.Domain.Entities.ContainerType", b =>
+                {
+                    b.Navigation("Containers");
+
+                    b.Navigation("DeliveryOrders");
+                });
+
+            modelBuilder.Entity("CleanArchitecture.Domain.Entities.Customer", b =>
+                {
+                    b.Navigation("DeliveryOrders");
+                });
+
+            modelBuilder.Entity("CleanArchitecture.Domain.Entities.DeliveryOrder", b =>
+                {
+                    b.Navigation("ContainerTransactions");
+                });
+
+            modelBuilder.Entity("CleanArchitecture.Domain.Entities.Depot", b =>
+                {
+                    b.Navigation("Blocks");
+                });
+
+            modelBuilder.Entity("CleanArchitecture.Domain.Entities.LineOperator", b =>
+                {
+                    b.Navigation("Containers");
+
+                    b.Navigation("DeliveryOrders");
                 });
 
             modelBuilder.Entity("CleanArchitecture.Domain.Entities.Media", b =>

@@ -84,35 +84,6 @@ public class AuthIdentityController(IAuthIdentityService authIdentityService) : 
     public async Task<IActionResult> Profile(CancellationToken cancellationToken)
         => Ok(await _authIdentityService.Get(cancellationToken));
 
-    /// <summary>
-    /// reset password
-    /// </summary>
-    /// <param name="request"></param>
-    /// <param name="cancellationToken"></param>
-    /// <returns></returns>
-    [HttpPost("resetPassword")]
-    [AllowAnonymous]
-    [SwaggerResponse(204, "Password reset successfully.")]
-    [SwaggerResponse(400, "Invalid request.")]
-    public async Task<IActionResult> ResetPassword(ResetPasswordRequest request, CancellationToken cancellationToken)
-    {
-        await _authIdentityService.ResetPassword(request, cancellationToken);
-        return NoContent();
-    }
-
-    /// <summary>
-    /// send code to reset password
-    /// </summary>
-    /// <param name="request"></param>
-    /// <param name="cancellationToken"></param>
-    /// <returns></returns>
-    [HttpPost("sendPasswordResetCode")]
-    [AllowAnonymous]
-    [SwaggerResponse(200, "Password reset code sent successfully.")]
-    [SwaggerResponse(400, "Invalid request.")]
-    public async Task<IActionResult> SendPasswordResetCode(SendPasswordResetCodeRequest request, CancellationToken cancellationToken)
-        => Ok(await _authIdentityService.SendPasswordResetCode(request, cancellationToken));
-
     private string GetTokenInCookie() => Request.Cookies["token_key"];
 
     private void SetTokenInCookie(string refreshToken)

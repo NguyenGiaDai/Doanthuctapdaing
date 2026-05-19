@@ -13,14 +13,12 @@ public class AuthIdentityService(
     SignInManager<ApplicationUser> signInManager,
     ITokenService tokenService,
     IUnitOfWork unitOfWork,
-    IMailService emailSender,
     ICurrentUser currentUser,
     AppSettings appSettings,
     ICookieService cookieService) : IAuthIdentityService
 {
     private readonly UserManager<ApplicationUser> _userManager = userManager;
     private readonly SignInManager<ApplicationUser> _signInManager = signInManager;
-    private readonly IMailService _emailSender = emailSender;
     private readonly ITokenService _tokenService = tokenService;
     private readonly IUnitOfWork _unitOfWork = unitOfWork;
     private readonly ICurrentUser _currentUser = currentUser;
@@ -141,63 +139,5 @@ public class AuthIdentityService(
                     ?? throw AuthIdentityException.ThrowAccountDoesNotExist();
 
         return users;
-    }
-
-    public async Task<ForgotPassword> SendPasswordResetCode(SendPasswordResetCodeRequest request, CancellationToken cancellationToken)
-    {
-        //Get identity user details user manager
-        var user = await _userManager.FindByEmailAsync(request.Email)
-            ?? throw AuthIdentityException.ThrowUserNotFound();
-
-        //Generate password reset token
-        var token = await _userManager.GeneratePasswordResetTokenAsync(user);
-
-        //Generate OTP
-        int otp = StringHelper.GenerateRandom(100000, 999999);
-
-        var resetPassword = new ForgotPassword()
-        {
-            Email = request.Email,
-            OTP = otp.ToString(),
-            Token = token,
-            UserId = user.Id,
-            DateTime = DateTime.Now
-        };
-
-        //save data into db with OTP
-        await _unitOfWork.ExecuteTransactionAsync(
-            async () => await _unitOfWork.ForgotPasswordRepository.AddAsync(resetPassword), cancellationToken);
-
-        //To do: Send token in email
-        await _emailSender.SendEmailAsync(request.Email, "Reset Password OTP", "Hello "
-            + request.Email +
-            "<br><br>Please find the reset password token below<br><br><b>"
-            + otp +
-            "<b><br><br>Thanks<br>nhonvo.github.io");
-
-        return resetPassword;
-    }
-
-    public async Task ResetPassword(ResetPasswordRequest request, CancellationToken cancellationToken)
-    {
-        //Get identity user details user manager
-        var user = await _userManager.FindByEmailAsync(request.Email);
-
-        //Getting token from otp
-        var resetPasswordDetails = await _unitOfWork.ForgotPasswordRepository.FirstOrDefaultAsync(
-            filter: x => x.OTP == request.OTP && x.UserId == user.Id, x => x.DateTime, false);
-
-        //Verify if token is older than 3 minutes
-        var expirationDateTime = resetPasswordDetails.DateTime.AddMinutes(3);
-
-        if (expirationDateTime < DateTime.Now)
-        {
-            throw AuthIdentityException.ThrowGenerateTheNewOTP();
-        }
-
-        var res = await _userManager.ResetPasswordAsync(user, resetPasswordDetails.Token, request.NewPassword);
-
-        if (!res.Succeeded)
-            throw AuthIdentityException.ThrowOTPWrong();
     }
 }

@@ -3,7 +3,6 @@ using CleanArchitecture.Application.Common.Interfaces;
 using CleanArchitecture.Application.Common.Utilities;
 using CleanArchitecture.Application.Services;
 using CleanArchitecture.Web.Services;
-
 namespace CleanArchitecture.Application;
 
 public static class ConfigureServices
@@ -11,8 +10,15 @@ public static class ConfigureServices
     public static IServiceCollection AddApplicationService(this IServiceCollection services, AppSettings appsettings)
     {
         services.AddTransient<IAuthService, AuthService>();
-        services.AddTransient<IBookService, BookService>();
-        services.AddTransient<IMailService, MailService>();
+        services.AddTransient<IContainerService, ContainerService>();
+        services.AddTransient<IDepotService, DepotService>();
+        services.AddTransient<IBlockService, BlockService>();
+        services.AddTransient<IContainerPositionService, ContainerPositionService>();
+        services.AddTransient<IContainerTransactionService, ContainerTransactionService>();
+        services.AddTransient<ICustomerService, CustomerService>();
+        services.AddTransient<ILineOperatorService, LineOperatorService>();
+        services.AddTransient<IContainerTypeService, ContainerTypeService>();
+        services.AddTransient<IDeliveryOrderService, DeliveryOrderService>();
         services.AddTransient<IMediaService, MediaService>();
         services.AddTransient<IRoleService, RoleService>();
         services.AddTransient<IAuthIdentityService, AuthIdentityService>();
@@ -25,7 +31,6 @@ public static class ConfigureServices
         {
             services.AddSingleton<IFileService, CloudinaryStorageService>();
         }
-
 
         services.AddTransient<IUserService, UserService>();
 

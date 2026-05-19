@@ -29,10 +29,17 @@ public static class ConfigureServices
 
         // register services
         services.AddScoped<IUserRepository, UserRepository>();
-        services.AddScoped<IBookRepository, BookRepository>();
+        services.AddScoped<IContainerRepository, ContainerRepository>();
+        services.AddTransient<IDepotRepository, DepotRepository>();
+        services.AddScoped<IBlockRepository, BlockRepository>();
+        services.AddTransient<IContainerPositionRepository, ContainerPositionRepository>();
+        services.AddTransient<IContainerTransactionRepository, ContainerTransactionRepository>();
+        services.AddTransient<ICustomerRepository, CustomerRepository>();
+        services.AddTransient<ILineOperatorRepository, LineOperatorRepository>();
+        services.AddTransient<IContainerTypeRepository, ContainerTypeRepository>();
+        services.AddTransient<IDeliveryOrderRepository, DeliveryOrderRepository>();
         services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
         services.AddScoped<IMediaRepository, MediaRepository>();
-        services.AddScoped<IForgotPasswordRepository, ForgotPasswordRepository>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddTransient<ApplicationDbContextInitializer>();
 

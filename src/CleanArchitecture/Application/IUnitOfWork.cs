@@ -1,14 +1,20 @@
 using CleanArchitecture.Infrastructure.Interface;
-
 namespace CleanArchitecture.Application;
 
 public interface IUnitOfWork
 {
     IUserRepository UserRepository { get; }
-    IBookRepository BookRepository { get; }
+    IContainerRepository ContainerRepository { get; }
+    IBlockRepository BlockRepository { get; }
+    IDepotRepository DepotRepository { get; }
+    IContainerPositionRepository ContainerPositionRepository { get; }
+    IContainerTransactionRepository ContainerTransactionRepository { get; }
+    ICustomerRepository CustomerRepository { get; }
+    ILineOperatorRepository LineOperatorRepository { get; }
+    IContainerTypeRepository ContainerTypeRepository { get; }
+    IDeliveryOrderRepository DeliveryOrderRepository { get; }
     IRefreshTokenRepository RefreshTokenRepository { get; }
     IMediaRepository MediaRepository { get; }
-    IForgotPasswordRepository ForgotPasswordRepository { get; }
     Task SaveChangesAsync(CancellationToken token);
     Task ExecuteTransactionAsync(Action action, CancellationToken token);
     Task ExecuteTransactionAsync(Func<Task> action, CancellationToken token);

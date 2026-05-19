@@ -6,7 +6,6 @@
     <Nullable>enable</Nullable>
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>
-    <IsPackable>true</IsPackable>
     <RootNamespace>CleanArchitecture.Unittest</RootNamespace>
     <AssemblyName>CleanArchitecture.Unittest</AssemblyName>
   </PropertyGroup>
