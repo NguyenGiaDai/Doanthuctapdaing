@@ -1,0 +1,735 @@
+<section class="master-data-page">
+  <header class="page-header">
+    <div>
+      <p class="eyebrow">Dữ liệu nền tảng</p>
+      <h1>Master Data</h1>
+      <p>
+        Quản lý các danh mục dùng chung cho nghiệp vụ container, block bãi,
+        Delivery Order và báo cáo depot.
+      </p>
+    </div>
+
+    <button type="button" class="refresh-button" (click)="loadMasterData()" [disabled]="isLoading">
+      {{ isLoading ? 'Đang tải...' : 'Tải lại' }}
+    </button>
+  </header>
+
+  <div class="summary-grid">
+    <article class="summary-card">
+      <span>Block bãi</span>
+      <strong>{{ blocks.length }}</strong>
+      <small>{{ getPhysicalBlockCount() }} block thật, {{ getVirtualBlockCount() }} block ảo</small>
+    </article>
+
+    <article class="summary-card">
+      <span>Loại container</span>
+      <strong>{{ containerTypes.length }}</strong>
+      <small>20ft / 40ft và các mã ISO</small>
+    </article>
+
+    <article class="summary-card">
+      <span>Hãng khai thác</span>
+      <strong>{{ lineOperators.length }}</strong>
+      <small>Phục vụ nhập/xuất và báo cáo</small>
+    </article>
+
+    <article class="summary-card">
+      <span>Khách hàng</span>
+      <strong>{{ customers.length }}</strong>
+      <small>Dùng khi tạo Delivery Order</small>
+    </article>
+  </div>
+
+  <div class="tabs-card">
+    <button
+      *ngFor="let tab of tabs"
+      type="button"
+      class="tab-button"
+      [class.active]="activeTab === tab.key"
+      (click)="setActiveTab(tab.key)"
+    >
+      <span>{{ tab.title }}</span>
+      <strong>{{ getTabCount(tab.key) }}</strong>
+    </button>
+  </div>
+
+  <section class="content-card">
+    <div class="content-toolbar">
+      <div>
+        <h2>{{ getActiveTabTitle() }}</h2>
+        <p>{{ getActiveTabDescription() }}</p>
+      </div>
+
+      <div class="toolbar-actions">
+        <label class="search-box">
+          <span>Tìm kiếm</span>
+          <input
+            type="text"
+            [(ngModel)]="searchKeyword"
+            (ngModelChange)="selectDefaultForActiveTab()"
+            placeholder="Nhập mã hoặc tên..."
+          />
+        </label>
+
+        <button type="button" class="primary-action" (click)="openCreateModalForActiveTab()">
+          {{ getPrimaryActionLabel() }}
+        </button>
+      </div>
+    </div>
+
+    <div *ngIf="successMessage" class="message success-message">
+      {{ successMessage }}
+    </div>
+
+    <div *ngIf="errorMessage" class="message error-message">
+      {{ errorMessage }}
+    </div>
+
+    <div *ngIf="isLoading" class="message loading-message">
+      Đang tải dữ liệu Master Data...
+    </div>
+
+    <div *ngIf="!isLoading && !errorMessage" class="master-layout">
+      <div class="table-panel">
+        <div class="table-meta">
+          <span>Hiển thị {{ getFilteredActiveTabCount() }} / {{ getActiveTabCount() }} bản ghi</span>
+        </div>
+
+        <ng-container [ngSwitch]="activeTab">
+          <div *ngSwitchCase="'blocks'" class="table-wrapper">
+            <table class="data-table">
+              <thead>
+              <tr>
+                <th>Mã block</th>
+                <th>Tên block</th>
+                <th>Loại block</th>
+                <th>Sức chứa</th>
+              </tr>
+              </thead>
+              <tbody>
+              <tr
+                *ngFor="let block of getFilteredBlocks()"
+                [class.selected]="selectedBlock?.id === block.id"
+                (click)="selectBlock(block)"
+              >
+                <td class="strong-text">{{ block.blockCode }}</td>
+                <td>{{ block.blockName }}</td>
+                <td>
+                    <span class="status-pill" [ngClass]="getBlockTypeClass(block.blockType)">
+                      {{ block.blockType }}
+                    </span>
+                </td>
+                <td>{{ getBlockCapacityDisplay(block) }}</td>
+              </tr>
+              </tbody>
+            </table>
+
+            <div *ngIf="getFilteredBlocks().length === 0" class="empty-state">
+              Không tìm thấy block phù hợp.
+            </div>
+          </div>
+
+          <div *ngSwitchCase="'containerTypes'" class="table-wrapper">
+            <table class="data-table">
+              <thead>
+              <tr>
+                <th>Mã loại</th>
+                <th>Tên loại</th>
+                <th>ISO</th>
+                <th>Kích thước</th>
+              </tr>
+              </thead>
+              <tbody>
+              <tr
+                *ngFor="let containerType of getFilteredContainerTypes()"
+                [class.selected]="selectedContainerType?.id === containerType.id"
+                (click)="selectContainerType(containerType)"
+              >
+                <td class="strong-text">{{ containerType.containerTypeCode }}</td>
+                <td>{{ containerType.containerTypeName }}</td>
+                <td>{{ containerType.isoCode }}</td>
+                <td>{{ containerType.containerSize }}ft</td>
+              </tr>
+              </tbody>
+            </table>
+
+            <div *ngIf="getFilteredContainerTypes().length === 0" class="empty-state">
+              Không tìm thấy loại container phù hợp.
+            </div>
+          </div>
+
+          <div *ngSwitchCase="'lineOperators'" class="table-wrapper">
+            <table class="data-table">
+              <thead>
+              <tr>
+                <th>Mã hãng</th>
+                <th>Tên hãng khai thác</th>
+              </tr>
+              </thead>
+              <tbody>
+              <tr
+                *ngFor="let lineOperator of getFilteredLineOperators()"
+                [class.selected]="selectedLineOperator?.id === lineOperator.id"
+                (click)="selectLineOperator(lineOperator)"
+              >
+                <td class="strong-text">{{ lineOperator.lineOperatorCode }}</td>
+                <td>{{ lineOperator.lineOperatorName }}</td>
+              </tr>
+              </tbody>
+            </table>
+
+            <div *ngIf="getFilteredLineOperators().length === 0" class="empty-state">
+              Không tìm thấy hãng khai thác phù hợp.
+            </div>
+          </div>
+
+          <div *ngSwitchCase="'customers'" class="table-wrapper">
+            <table class="data-table">
+              <thead>
+              <tr>
+                <th>Mã khách hàng</th>
+                <th>Tên khách hàng</th>
+                <th>Mã số thuế</th>
+              </tr>
+              </thead>
+              <tbody>
+              <tr
+                *ngFor="let customer of getFilteredCustomers()"
+                [class.selected]="selectedCustomer?.id === customer.id"
+                (click)="selectCustomer(customer)"
+              >
+                <td class="strong-text">{{ customer.customerCode }}</td>
+                <td>{{ customer.customerName }}</td>
+                <td>{{ customer.customerTaxCode || '-' }}</td>
+              </tr>
+              </tbody>
+            </table>
+
+            <div *ngIf="getFilteredCustomers().length === 0" class="empty-state">
+              Không tìm thấy khách hàng phù hợp.
+            </div>
+          </div>
+        </ng-container>
+      </div>
+
+      <aside class="detail-panel">
+        <ng-container [ngSwitch]="activeTab">
+          <div *ngSwitchCase="'blocks'">
+            <ng-container *ngIf="selectedBlock; else noSelection">
+              <span class="detail-label">Chi tiết block</span>
+              <h3>{{ selectedBlock.blockCode }} - {{ selectedBlock.blockName }}</h3>
+
+              <dl>
+                <div>
+                  <dt>Depot</dt>
+                  <dd>
+                    {{ selectedBlock.depotCode || 'Depot #' + selectedBlock.depotId }}
+                    {{ selectedBlock.depotName }}
+                  </dd>
+                </div>
+                <div>
+                  <dt>Loại block</dt>
+                  <dd>{{ getBlockTypeDisplayName(selectedBlock.blockType) }}</dd>
+                </div>
+                <div>
+                  <dt>Sức chứa</dt>
+                  <dd>{{ getBlockCapacityDisplay(selectedBlock) }}</dd>
+                </div>
+              </dl>
+            </ng-container>
+          </div>
+
+          <div *ngSwitchCase="'containerTypes'">
+            <ng-container *ngIf="selectedContainerType; else noSelection">
+              <span class="detail-label">Chi tiết loại container</span>
+              <h3>{{ selectedContainerType.containerTypeCode }} - {{ selectedContainerType.containerTypeName }}</h3>
+
+              <dl>
+                <div>
+                  <dt>ISO Code</dt>
+                  <dd>{{ selectedContainerType.isoCode }}</dd>
+                </div>
+                <div>
+                  <dt>Kích thước</dt>
+                  <dd>{{ selectedContainerType.containerSize }}ft</dd>
+                </div>
+                <div>
+                  <dt>Maximum Weight</dt>
+                  <dd>{{ getWeightDisplay(selectedContainerType.maximumWeight) }}</dd>
+                </div>
+                <div>
+                  <dt>Tare Weight</dt>
+                  <dd>{{ getWeightDisplay(selectedContainerType.tareWeight) }}</dd>
+                </div>
+              </dl>
+            </ng-container>
+          </div>
+
+          <div *ngSwitchCase="'lineOperators'">
+            <ng-container *ngIf="selectedLineOperator; else noSelection">
+              <span class="detail-label">Chi tiết hãng khai thác</span>
+              <h3>{{ selectedLineOperator.lineOperatorCode }}</h3>
+
+              <dl>
+                <div>
+                  <dt>Tên hãng</dt>
+                  <dd>{{ selectedLineOperator.lineOperatorName }}</dd>
+                </div>
+              </dl>
+            </ng-container>
+          </div>
+
+          <div *ngSwitchCase="'customers'">
+            <ng-container *ngIf="selectedCustomer; else noSelection">
+              <span class="detail-label">Chi tiết khách hàng</span>
+              <h3>{{ selectedCustomer.customerCode }} - {{ selectedCustomer.customerName }}</h3>
+
+              <dl>
+                <div>
+                  <dt>Mã số thuế</dt>
+                  <dd>{{ selectedCustomer.customerTaxCode || '-' }}</dd>
+                </div>
+                <div>
+                  <dt>Địa chỉ</dt>
+                  <dd>{{ selectedCustomer.address || '-' }}</dd>
+                </div>
+              </dl>
+            </ng-container>
+          </div>
+        </ng-container>
+      </aside>
+    </div>
+  </section>
+</section>
+
+<div *ngIf="isCreateBlockModalOpen" class="modal-backdrop" (click)="closeCreateBlockModal()">
+  <section class="modal-card" (click)="$event.stopPropagation()">
+    <header class="modal-header">
+      <div>
+        <p class="eyebrow">Master Data</p>
+        <h2>Thêm block</h2>
+        <span>Khai báo block bãi để sử dụng trong vận hành depot.</span>
+      </div>
+
+      <button type="button" class="icon-button" (click)="closeCreateBlockModal()" [disabled]="isSubmittingBlock">
+        ×
+      </button>
+    </header>
+
+    <div *ngIf="createBlockErrorMessage" class="message error-message">
+      {{ createBlockErrorMessage }}
+    </div>
+
+    <form class="modal-form" (ngSubmit)="submitCreateBlock()">
+      <label>
+        <span>Depot</span>
+        <select [(ngModel)]="createBlockForm.depotId" name="depotId" required>
+          <option [ngValue]="null">Chọn depot</option>
+          <option *ngFor="let depot of depots" [ngValue]="depot.id">
+            {{ depot.depotCode }} - {{ depot.depotName }}
+          </option>
+        </select>
+      </label>
+
+      <div class="form-grid two-columns">
+        <label>
+          <span>Mã block</span>
+          <input
+            type="text"
+            [(ngModel)]="createBlockForm.blockCode"
+            name="blockCode"
+            placeholder="VD: A01"
+            required
+          />
+        </label>
+
+        <label>
+          <span>Tên block</span>
+          <input
+            type="text"
+            [(ngModel)]="createBlockForm.blockName"
+            name="blockName"
+            placeholder="VD: Block A01"
+            required
+          />
+        </label>
+      </div>
+
+      <label>
+        <span>Loại block</span>
+        <select
+          [(ngModel)]="createBlockForm.blockType"
+          name="blockType"
+          (ngModelChange)="onCreateBlockTypeChanged()"
+          required
+        >
+          <option *ngFor="let blockType of blockTypes" [ngValue]="blockType">
+            {{ getBlockTypeDisplayName(blockType) }}
+          </option>
+        </select>
+      </label>
+
+      <div class="business-note">
+        <strong>Lưu ý:</strong>
+        <span *ngIf="!isCreateBlockVirtual()">
+          Với block bãi thực tế, hãy nhập sức chứa gồm Bay, Row và Tier.
+        </span>
+        <span *ngIf="isCreateBlockVirtual()">
+          Với block ảo, bạn không cần nhập Bay, Row và Tier.
+        </span>
+      </div>
+
+      <div class="form-grid three-columns" [class.disabled-grid]="isCreateBlockVirtual()">
+        <label>
+          <span>Max Bay</span>
+          <input
+            type="number"
+            min="1"
+            [(ngModel)]="createBlockForm.maxBay"
+            name="maxBay"
+            [disabled]="isCreateBlockVirtual()"
+            placeholder="VD: 10"
+          />
+        </label>
+
+        <label>
+          <span>Max Row</span>
+          <input
+            type="number"
+            min="1"
+            [(ngModel)]="createBlockForm.maxRow"
+            name="maxRow"
+            [disabled]="isCreateBlockVirtual()"
+            placeholder="VD: 6"
+          />
+        </label>
+
+        <label>
+          <span>Max Tier</span>
+          <input
+            type="number"
+            min="1"
+            [(ngModel)]="createBlockForm.maxTier"
+            name="maxTier"
+            [disabled]="isCreateBlockVirtual()"
+            placeholder="VD: 4"
+          />
+        </label>
+      </div>
+
+      <footer class="modal-actions">
+        <button type="button" class="secondary-button" (click)="closeCreateBlockModal()" [disabled]="isSubmittingBlock">
+          Hủy
+        </button>
+        <button type="submit" class="primary-action" [disabled]="isSubmittingBlock">
+          {{ isSubmittingBlock ? 'Đang lưu...' : 'Lưu block' }}
+        </button>
+      </footer>
+    </form>
+  </section>
+</div>
+
+<div
+  *ngIf="isCreateContainerTypeModalOpen"
+  class="modal-backdrop"
+  (click)="closeCreateContainerTypeModal()"
+>
+  <section class="modal-card" (click)="$event.stopPropagation()">
+    <header class="modal-header">
+      <div>
+        <p class="eyebrow">Master Data</p>
+        <h2>Thêm loại container</h2>
+        <span>Khai báo loại container để sử dụng khi tạo container và Delivery Order.</span>
+      </div>
+
+      <button
+        type="button"
+        class="icon-button"
+        (click)="closeCreateContainerTypeModal()"
+        [disabled]="isSubmittingContainerType"
+      >
+        ×
+      </button>
+    </header>
+
+    <div *ngIf="createContainerTypeErrorMessage" class="message error-message">
+      {{ createContainerTypeErrorMessage }}
+    </div>
+
+    <form class="modal-form" (ngSubmit)="submitCreateContainerType()">
+      <div class="form-grid two-columns">
+        <label>
+          <span>Mã loại container</span>
+          <input
+            type="text"
+            [(ngModel)]="createContainerTypeForm.containerTypeCode"
+            name="containerTypeCode"
+            placeholder="VD: 20DC"
+            required
+          />
+        </label>
+
+        <label>
+          <span>Tên loại container</span>
+          <input
+            type="text"
+            [(ngModel)]="createContainerTypeForm.containerTypeName"
+            name="containerTypeName"
+            placeholder="VD: 20ft Dry Container"
+            required
+          />
+        </label>
+      </div>
+
+      <div class="form-grid two-columns">
+        <label>
+          <span>ISO Code</span>
+          <input
+            type="text"
+            [(ngModel)]="createContainerTypeForm.isoCode"
+            name="isoCode"
+            placeholder="VD: 22G1"
+            required
+          />
+        </label>
+
+        <label>
+          <span>Kích thước</span>
+          <select
+            [(ngModel)]="createContainerTypeForm.containerSize"
+            name="containerSize"
+            required
+          >
+            <option [ngValue]="null">Chọn kích thước</option>
+            <option *ngFor="let size of containerSizeOptions" [ngValue]="size">
+              {{ size }}ft
+            </option>
+          </select>
+        </label>
+      </div>
+
+      <div class="business-note">
+        <strong>Lưu ý:</strong>
+        <span>
+          Mã loại container nên đặt ngắn gọn như 20DC, 40HC, 20RF để dễ sử dụng.
+        </span>
+      </div>
+
+      <div class="form-grid two-columns">
+        <label>
+          <span>Maximum Weight</span>
+          <input
+            type="number"
+            min="1"
+            [(ngModel)]="createContainerTypeForm.maximumWeight"
+            name="maximumWeight"
+            placeholder="VD: 30480"
+          />
+        </label>
+
+        <label>
+          <span>Tare Weight</span>
+          <input
+            type="number"
+            min="1"
+            [(ngModel)]="createContainerTypeForm.tareWeight"
+            name="tareWeight"
+            placeholder="VD: 2200"
+          />
+        </label>
+      </div>
+
+      <footer class="modal-actions">
+        <button
+          type="button"
+          class="secondary-button"
+          (click)="closeCreateContainerTypeModal()"
+          [disabled]="isSubmittingContainerType"
+        >
+          Hủy
+        </button>
+        <button type="submit" class="primary-action" [disabled]="isSubmittingContainerType">
+          {{ isSubmittingContainerType ? 'Đang lưu...' : 'Lưu loại container' }}
+        </button>
+      </footer>
+    </form>
+  </section>
+</div>
+
+<div
+  *ngIf="isCreateLineOperatorModalOpen"
+  class="modal-backdrop"
+  (click)="closeCreateLineOperatorModal()"
+>
+  <section class="modal-card" (click)="$event.stopPropagation()">
+    <header class="modal-header">
+      <div>
+        <p class="eyebrow">Master Data</p>
+        <h2>Khai báo hãng khai thác</h2>
+        <span>Khai báo hãng tàu để sử dụng khi tạo container, Delivery Order và báo cáo.</span>
+      </div>
+
+      <button
+        type="button"
+        class="icon-button"
+        (click)="closeCreateLineOperatorModal()"
+        [disabled]="isSubmittingLineOperator"
+      >
+        ×
+      </button>
+    </header>
+
+    <div *ngIf="createLineOperatorErrorMessage" class="message error-message">
+      {{ createLineOperatorErrorMessage }}
+    </div>
+
+    <form class="modal-form" (ngSubmit)="submitCreateLineOperator()">
+      <div class="form-grid two-columns">
+        <label>
+          <span>Mã hãng khai thác</span>
+          <input
+            type="text"
+            [(ngModel)]="createLineOperatorForm.lineOperatorCode"
+            name="lineOperatorCode"
+            placeholder="VD: ONE"
+            required
+          />
+        </label>
+
+        <label>
+          <span>Tên hãng khai thác</span>
+          <input
+            type="text"
+            [(ngModel)]="createLineOperatorForm.lineOperatorName"
+            name="lineOperatorName"
+            placeholder="VD: Ocean Network Express"
+            required
+          />
+        </label>
+      </div>
+
+      <div class="business-note">
+        <strong>Lưu ý:</strong>
+        <span>
+          Mã hãng nên ngắn gọn, dễ nhận biết như ONE, MSC, CMA, MAERSK để dễ sử dụng.
+        </span>
+      </div>
+
+      <footer class="modal-actions">
+        <button
+          type="button"
+          class="secondary-button"
+          (click)="closeCreateLineOperatorModal()"
+          [disabled]="isSubmittingLineOperator"
+        >
+          Hủy
+        </button>
+        <button type="submit" class="primary-action" [disabled]="isSubmittingLineOperator">
+          {{ isSubmittingLineOperator ? 'Đang lưu...' : 'Lưu hãng khai thác' }}
+        </button>
+      </footer>
+    </form>
+  </section>
+</div>
+<div
+  *ngIf="isCreateCustomerModalOpen"
+  class="modal-backdrop"
+  (click)="closeCreateCustomerModal()"
+>
+  <section class="modal-card" (click)="$event.stopPropagation()">
+    <header class="modal-header">
+      <div>
+        <p class="eyebrow">Master Data</p>
+        <h2>Khai báo khách hàng</h2>
+        <span>Khai báo khách hàng để sử dụng khi tạo Delivery Order.</span>
+      </div>
+
+      <button
+        type="button"
+        class="icon-button"
+        (click)="closeCreateCustomerModal()"
+        [disabled]="isSubmittingCustomer"
+      >
+        ×
+      </button>
+    </header>
+
+    <div *ngIf="createCustomerErrorMessage" class="message error-message">
+      {{ createCustomerErrorMessage }}
+    </div>
+
+    <form class="modal-form" (ngSubmit)="submitCreateCustomer()">
+      <div class="form-grid two-columns">
+        <label>
+          <span>Mã khách hàng</span>
+          <input
+            type="text"
+            [(ngModel)]="createCustomerForm.customerCode"
+            name="customerCode"
+            placeholder="VD: CUS001"
+            required
+          />
+        </label>
+
+        <label>
+          <span>Tên khách hàng</span>
+          <input
+            type="text"
+            [(ngModel)]="createCustomerForm.customerName"
+            name="customerName"
+            placeholder="VD: Công ty ABC Logistics"
+            required
+          />
+        </label>
+      </div>
+
+      <div class="form-grid two-columns">
+        <label>
+          <span>Mã số thuế</span>
+          <input
+            type="text"
+            [(ngModel)]="createCustomerForm.customerTaxCode"
+            name="customerTaxCode"
+            placeholder="VD: 0312345678"
+          />
+        </label>
+
+        <label>
+          <span>Địa chỉ</span>
+          <input
+            type="text"
+            [(ngModel)]="createCustomerForm.address"
+            name="address"
+            placeholder="VD: TP. Hồ Chí Minh"
+          />
+        </label>
+      </div>
+
+      <div class="business-note">
+        <strong>Lưu ý:</strong>
+        <span>
+          Mã khách hàng nên ngắn gọn và dễ nhận biết để thuận tiện khi tạo Delivery Order.
+        </span>
+      </div>
+
+      <footer class="modal-actions">
+        <button
+          type="button"
+          class="secondary-button"
+          (click)="closeCreateCustomerModal()"
+          [disabled]="isSubmittingCustomer"
+        >
+          Hủy
+        </button>
+        <button type="submit" class="primary-action" [disabled]="isSubmittingCustomer">
+          {{ isSubmittingCustomer ? 'Đang lưu...' : 'Lưu khách hàng' }}
+        </button>
+      </footer>
+    </form>
+  </section>
+</div>
+<ng-template #noSelection>
+  <div class="empty-detail">
+    Chọn một dòng trong danh sách để xem chi tiết.
+  </div>
+</ng-template>

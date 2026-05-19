@@ -1,0 +1,108 @@
+<div class="app-shell">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-logo">
+        <img
+          src="https://upload.wikimedia.org/wikipedia/vi/6/69/Logo_SNP.jpg"
+          alt="Saigon Newport Corporation Logo"
+        />
+      </div>
+
+      <div class="brand-text">
+        <h1>Depot System</h1>
+        <p>Container Operations</p>
+      </div>
+    </div>
+
+    <nav class="nav-menu">
+      <a class="nav-item" routerLink="/dashboard" routerLinkActive="active">
+        <span class="nav-icon">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M3 13h8V3H3v10Zm0 8h8v-6H3v6Zm10 0h8V11h-8v10Zm0-18v6h8V3h-8Z" />
+          </svg>
+        </span>
+        <span class="nav-label">Dashboard</span>
+      </a>
+
+      <a class="nav-item" routerLink="/containers" routerLinkActive="active">
+        <span class="nav-icon">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M3 7 12 2l9 5v10l-9 5-9-5V7Zm9 2.2L6.6 6.1 5 7l7 4 7-4-1.6-.9L12 9.2ZM5 9.3v6.5l6 3.4v-6.5L5 9.3Zm8 9.9 6-3.4V9.3l-6 3.4v6.5Z" />
+          </svg>
+        </span>
+        <span class="nav-label">Containers</span>
+      </a>
+
+      <a class="nav-item" routerLink="/yard-operations" routerLinkActive="active">
+        <span class="nav-icon">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M4 4h16v4H4V4Zm0 6h7v10H4V10Zm9 0h7v4h-7v-4Zm0 6h7v4h-7v-4Z" />
+          </svg>
+        </span>
+        <span class="nav-label">Yard Operations</span>
+      </a>
+
+      <a class="nav-item" routerLink="/yard-map" routerLinkActive="active">
+        <span class="nav-icon">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M3 5 9 2l6 3 6-3v17l-6 3-6-3-6 3V5Zm7 .2v11.9l4 2V7.2l-4-2ZM5 6.3v12.4l3-1.5V4.8L5 6.3Zm11 .5v12.4l3-1.5V5.3l-3 1.5Z" />
+          </svg>
+        </span>
+        <span class="nav-label">Yard Map</span>
+      </a>
+
+      <a class="nav-item" routerLink="/delivery-orders" routerLinkActive="active">
+        <span class="nav-icon">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M6 2h9l5 5v15H6V2Zm8 1.5V8h4.5L14 3.5ZM8 11h8v2H8v-2Zm0 4h8v2H8v-2Zm0-8h4v2H8V7Z" />
+          </svg>
+        </span>
+        <span class="nav-label">Delivery Orders</span>
+      </a>
+
+      <a class="nav-item" routerLink="/master-data" routerLinkActive="active">
+        <span class="nav-icon">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M4 4h16v3H4V4Zm0 5h16v3H4V9Zm0 5h16v6H4v-6Zm2 2v2h12v-2H6Z" />
+          </svg>
+        </span>
+        <span class="nav-label">Master Data</span>
+      </a>
+
+      <a class="nav-item" routerLink="/reports" routerLinkActive="active">
+        <span class="nav-icon">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M5 3h14v18H5V3Zm3 14h2v-6H8v6Zm3 0h2V7h-2v10Zm3 0h2v-4h-2v4Z" />
+          </svg>
+        </span>
+        <span class="nav-label">Reports</span>
+      </a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <span>Internship Project</span>
+      <strong>Depot Management</strong>
+    </div>
+  </aside>
+
+  <main class="main-content">
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">Saigon Newport Corporation</p>
+        <h2>Depot Container Management</h2>
+      </div>
+
+      <div class="user-box">
+        <div>
+          <span>Intern Demo</span>
+          <p>Operator View</p>
+        </div>
+        <div class="avatar">JD</div>
+      </div>
+    </header>
+
+    <section class="page-content">
+      <router-outlet></router-outlet>
+    </section>
+  </main>
+</div>

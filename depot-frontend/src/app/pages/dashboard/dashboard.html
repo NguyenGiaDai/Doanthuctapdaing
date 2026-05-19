@@ -1,0 +1,176 @@
+<div class="dashboard-page">
+  <section class="page-header">
+    <div>
+      <p class="page-kicker">Tổng quan vận hành</p>
+      <h1>Depot Dashboard</h1>
+      <p class="page-description">
+        Theo dõi nhanh tình trạng container, tồn bãi, giao dịch trong ngày và các cảnh báo cần chú ý.
+      </p>
+    </div>
+
+    <div class="page-actions">
+      <span class="today-chip">{{ getTodayDisplay() }}</span>
+      <button type="button" class="primary-button" (click)="loadDashboard()" [disabled]="isLoading">
+        {{ isLoading ? 'Đang tải...' : 'Tải lại' }}
+      </button>
+    </div>
+  </section>
+
+  <div *ngIf="errorMessage" class="message error-message">
+    {{ errorMessage }}
+  </div>
+
+  <div *ngIf="isLoading" class="message loading-message">
+    Đang tải dữ liệu Dashboard...
+  </div>
+
+  <section class="stat-grid">
+    <article class="summary-card">
+      <span>Tổng container</span>
+      <strong>{{ getTotalContainers() }}</strong>
+      <p>{{ getInYardContainers() }} trong bãi, {{ getOutYardContainers() }} ngoài bãi</p>
+    </article>
+
+    <article class="summary-card">
+      <span>Tồn bãi hiện tại</span>
+      <strong>{{ getOccupiedSlotCount() }}</strong>
+      <p>{{ getYardOccupancyPercent() }}% sức chứa block thật</p>
+    </article>
+
+    <article class="summary-card">
+      <span>Nhập bãi hôm nay</span>
+      <strong>{{ getTodayImportCount() }}</strong>
+      <p>Từ báo cáo sản lượng ngày hiện tại</p>
+    </article>
+
+    <article class="summary-card">
+      <span>Xuất bãi hôm nay</span>
+      <strong>{{ getTodayExportCount() }}</strong>
+      <p>Tổng giao dịch: {{ getTodayThroughputCount() }}</p>
+    </article>
+  </section>
+
+  <section class="dashboard-grid">
+    <article class="panel large-panel">
+      <div class="panel-header">
+        <div>
+          <h2>Giao dịch gần nhất</h2>
+          <p>Lịch sử nhập, xuất và di dời container mới nhất trong hệ thống.</p>
+        </div>
+        <span class="status-pill">Live</span>
+      </div>
+
+      <div class="table-wrapper">
+        <table class="data-table">
+          <thead>
+          <tr>
+            <th>Container</th>
+            <th>Nghiệp vụ</th>
+            <th>Vị trí</th>
+            <th>Xe</th>
+          </tr>
+          </thead>
+
+          <tbody>
+          <tr *ngFor="let transaction of recentTransactions">
+            <td>
+              <strong>{{ getContainerDisplayName(transaction.containerId) }}</strong>
+            </td>
+            <td>
+                <span class="badge" [ngClass]="getTransactionClass(transaction.transactionType)">
+                  {{ getTransactionTypeDisplayName(transaction.transactionType) }}
+                </span>
+            </td>
+            <td>{{ getTransactionPositionDisplay(transaction) }}</td>
+            <td>{{ transaction.vehicleNumber || '-' }}</td>
+          </tr>
+          </tbody>
+        </table>
+
+        <div *ngIf="recentTransactions.length === 0 && !isLoading" class="empty-state">
+          Chưa có giao dịch container để hiển thị.
+        </div>
+      </div>
+    </article>
+
+    <article class="panel">
+      <div class="panel-header">
+        <div>
+          <h2>Sức chứa bãi</h2>
+          <p>Tính theo số vị trí đang có container / tổng slot block thật.</p>
+        </div>
+      </div>
+
+      <div class="occupancy-number">{{ getYardOccupancyPercent() }}%</div>
+      <div class="progress-track">
+        <div class="progress-fill" [style.width.%]="getYardOccupancyPercent()"></div>
+      </div>
+
+      <p class="panel-note">
+        {{ getOccupiedSlotCount() }} occupied / {{ getTotalPhysicalSlotCount() }} total slots
+      </p>
+
+      <div class="mini-list">
+        <div>
+          <span>In Yard</span>
+          <strong>{{ getInYardContainers() }}</strong>
+        </div>
+        <div>
+          <span>Damaged</span>
+          <strong>{{ getDamagedContainers() }}</strong>
+        </div>
+        <div>
+          <span>Inspection</span>
+          <strong>{{ getInspectionContainers() }}</strong>
+        </div>
+      </div>
+    </article>
+  </section>
+
+  <section class="dashboard-grid bottom-grid">
+    <article class="panel">
+      <div class="panel-header">
+        <div>
+          <h2>Tồn bãi theo hãng</h2>
+          <p>Top hãng khai thác có container đang tồn bãi.</p>
+        </div>
+      </div>
+
+      <div class="operator-list">
+        <div *ngFor="let item of getTopYardInventoryReports()" class="operator-row">
+          <div class="operator-row-header">
+            <span>{{ getLineOperatorDisplayName(item.lineOperatorCode, item.lineOperatorName, item.lineOperatorId) }}</span>
+            <strong>{{ item.totalInYardCount }}</strong>
+          </div>
+          <div class="bar-track">
+            <div class="bar-fill" [style.width]="getInventoryBarWidth(item.totalInYardCount)"></div>
+          </div>
+        </div>
+
+        <div *ngIf="getTopYardInventoryReports().length === 0 && !isLoading" class="empty-state compact">
+          Chưa có dữ liệu tồn bãi theo hãng.
+        </div>
+      </div>
+    </article>
+
+    <article class="panel">
+      <div class="panel-header">
+        <div>
+          <h2>Cảnh báo vận hành</h2>
+          <p>Các điểm cần chú ý dựa trên dữ liệu hiện tại.</p>
+        </div>
+      </div>
+
+      <div class="alert-list">
+        <div *ngFor="let alert of getDashboardAlerts()" class="alert-item" [ngClass]="alert.type">
+          <strong>{{ alert.title }}</strong>
+          <span>{{ alert.description }}</span>
+        </div>
+      </div>
+    </article>
+  </section>
+
+  <footer class="dashboard-footer">
+    Dữ liệu cập nhật lúc {{ getLastUpdatedDisplay() }}.
+  </footer>
+</div>

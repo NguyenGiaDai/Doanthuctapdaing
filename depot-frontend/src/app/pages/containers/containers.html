@@ -1,0 +1,504 @@
+<div class="containers-page">
+  <section class="page-header">
+    <div>
+      <p class="page-kicker">QUẢN LÝ CONTAINER</p>
+      <h1>Danh sách container</h1>
+      <p class="page-description">
+        Quản lý hồ sơ container: số container, loại, hãng khai thác, tình trạng, phân loại và trạng thái hiện tại.
+      </p>
+    </div>
+
+    <button type="button" class="primary-button" (click)="openAddContainerModal()">
+      Khai báo container
+    </button>
+  </section>
+
+  <section class="filter-card">
+    <div class="filter-card-header">
+      <div>
+        <h2>Bộ lọc container</h2>
+        <p>Tra cứu và lọc danh sách container.</p>
+      </div>
+
+      <button type="button" class="clear-filter-button" (click)="clearFilters()">
+        Đặt lại
+      </button>
+    </div>
+
+    <div class="filter-grid">
+      <div class="search-box">
+        <span>Tìm kiếm container</span>
+        <input
+          type="text"
+          placeholder="Nhập số container, loại, ISO, hãng khai thác..."
+          [(ngModel)]="searchKeyword"
+          (input)="applyFilters()"
+        />
+      </div>
+
+      <div class="filter-box">
+        <span>Trạng thái</span>
+        <select [(ngModel)]="selectedStatus" (change)="applyFilters()">
+          <option *ngFor="let status of statusOptions" [value]="status">
+            {{ status }}
+          </option>
+        </select>
+      </div>
+
+      <div class="filter-box">
+        <span>Hãng khai thác</span>
+        <select [(ngModel)]="selectedLineOperator" (change)="applyFilters()">
+          <option *ngFor="let line of lineOperatorOptions" [value]="line">
+            {{ line }}
+          </option>
+        </select>
+      </div>
+
+      <div class="filter-box">
+        <span>Tình trạng</span>
+        <select [(ngModel)]="selectedCondition" (change)="applyFilters()">
+          <option *ngFor="let condition of conditionOptions" [value]="condition">
+            {{ condition }}
+          </option>
+        </select>
+      </div>
+    </div>
+  </section>
+
+  <section *ngIf="isContainerModalOpen" class="modal-backdrop">
+    <form class="container-form-card" (ngSubmit)="submitContainerForm()">
+      <div class="form-header">
+        <div>
+          <p>{{ isEditMode ? 'CẬP NHẬT CONTAINER' : 'KHAI BÁO CONTAINER' }}</p>
+          <h2>{{ isEditMode ? 'Chỉnh sửa container' : 'Khai báo container' }}</h2>
+        </div>
+
+        <button type="button" class="icon-button" (click)="closeContainerModal()">
+          ×
+        </button>
+      </div>
+
+      <div *ngIf="isDropdownLoading" class="form-message">
+        Đang tải loại container và hãng khai thác...
+      </div>
+
+      <div *ngIf="dropdownErrorMessage" class="form-message error-card">
+        {{ dropdownErrorMessage }}
+      </div>
+
+      <div *ngIf="containerFormErrorMessage" class="form-message error-card">
+        {{ containerFormErrorMessage }}
+      </div>
+
+      <div class="form-grid">
+        <label>
+          <span>Số container</span>
+          <input
+            type="text"
+            name="containerNumber"
+            placeholder="Ví dụ: CMAU1234564"
+            [(ngModel)]="containerForm.containerNumber"
+            [disabled]="isSubmittingContainer"
+          />
+        </label>
+
+        <label>
+          <span>Loại container</span>
+          <select
+            name="containerTypeId"
+            [(ngModel)]="containerForm.containerTypeId"
+            [disabled]="isSubmittingContainer"
+          >
+            <option [ngValue]="null">Chọn loại container</option>
+            <option *ngFor="let type of containerTypes" [ngValue]="type.id">
+              {{ type.containerTypeCode }} - {{ type.containerTypeName }} - {{ type.containerSize }} ft
+            </option>
+          </select>
+        </label>
+
+        <label>
+          <span>Hãng khai thác</span>
+          <select
+            name="lineOperatorId"
+            [(ngModel)]="containerForm.lineOperatorId"
+            [disabled]="isSubmittingContainer"
+          >
+            <option [ngValue]="null">Chọn hãng khai thác</option>
+            <option *ngFor="let line of lineOperators" [ngValue]="line.id">
+              {{ line.lineOperatorCode }} - {{ line.lineOperatorName }}
+            </option>
+          </select>
+        </label>
+
+        <label>
+          <span>Ngày sản xuất</span>
+          <input
+            type="date"
+            name="dateOfManufacture"
+            [(ngModel)]="containerForm.dateOfManufacture"
+            [disabled]="isSubmittingContainer"
+          />
+        </label>
+
+        <label>
+          <span>Chủ sở hữu</span>
+          <input
+            type="text"
+            name="containerOwner"
+            placeholder="Ví dụ: SNP"
+            [(ngModel)]="containerForm.containerOwner"
+            [disabled]="isSubmittingContainer"
+          />
+        </label>
+
+        <label>
+          <span>Tình trạng</span>
+          <select
+            name="containerCondition"
+            [(ngModel)]="containerForm.containerCondition"
+            [disabled]="isSubmittingContainer"
+          >
+            <option value="Good">Good - bình thường</option>
+            <option value="Damaged">Damaged - hư hỏng, cần xử lý</option>
+            <option value="Inspection">Inspection - chờ kiểm định</option>
+          </select>
+        </label>
+
+        <label>
+          <span>Phân loại</span>
+          <select
+            name="containerClassification"
+            [(ngModel)]="containerForm.containerClassification"
+            [disabled]="isSubmittingContainer"
+          >
+            <option value="A">A</option>
+            <option value="B">B</option>
+            <option value="C">C</option>
+          </select>
+
+          <small class="field-help">
+            A: Khô, Hở, Bunker ·
+            B: Mở nắp, Flat Rack, Đặc biệt ·
+            C: Lạnh
+          </small>
+        </label>
+
+        <label>
+          <span>{{ isEditMode ? 'Trạng thái hiện tại' : 'Trạng thái ban đầu' }}</span>
+          <select
+            name="currentStatus"
+            [(ngModel)]="containerForm.currentStatus"
+            [disabled]="isSubmittingContainer"
+          >
+            <option value="OutYard">OutYard</option>
+            <option value="Reserved">Reserved</option>
+            <option value="InYard">InYard</option>
+          </select>
+        </label>
+      </div>
+
+      <div class="form-actions">
+        <button
+          type="button"
+          class="secondary-button"
+          (click)="closeContainerModal()"
+          [disabled]="isSubmittingContainer"
+        >
+          Hủy
+        </button>
+
+        <button
+          type="submit"
+          class="primary-button"
+          [disabled]="isSubmittingContainer || isDropdownLoading"
+        >
+          {{
+            isSubmittingContainer
+              ? 'Đang lưu...'
+              : isEditMode
+                ? 'Cập nhật container'
+                : 'Khai báo container'
+          }}
+        </button>
+      </div>
+    </form>
+  </section>
+
+  <section *ngIf="isHistoryModalOpen" class="modal-backdrop">
+    <article class="history-modal-card">
+      <div class="form-header">
+        <div>
+          <p>LỊCH SỬ DI CHUYỂN</p>
+          <h2>{{ historyContainer?.containerNumber || 'Container' }}</h2>
+        </div>
+
+        <button
+          type="button"
+          class="icon-button"
+          (click)="closeContainerHistoryModal()"
+          [disabled]="isHistoryLoading"
+        >
+          ×
+        </button>
+      </div>
+
+      <div *ngIf="isHistoryLoading" class="form-message">
+        Đang tải lịch sử container...
+      </div>
+
+      <div *ngIf="historyErrorMessage" class="form-message error-card">
+        {{ historyErrorMessage }}
+      </div>
+
+      <div
+        *ngIf="!isHistoryLoading && !historyErrorMessage && previousPosition && currentPosition"
+        class="movement-preview"
+      >
+        <section class="position-card previous">
+          <p>{{ previousPosition.title }}</p>
+          <h3>{{ previousPosition.status }}</h3>
+
+          <div class="position-grid">
+            <div>
+              <span>Block</span>
+              <strong>{{ previousPosition.block }}</strong>
+            </div>
+
+            <div>
+              <span>Bay</span>
+              <strong>{{ previousPosition.bay }}</strong>
+            </div>
+
+            <div>
+              <span>Row</span>
+              <strong>{{ previousPosition.row }}</strong>
+            </div>
+
+            <div>
+              <span>Tier</span>
+              <strong>{{ previousPosition.tier }}</strong>
+            </div>
+          </div>
+
+          <small>{{ previousPosition.description }}</small>
+        </section>
+
+        <div class="movement-arrow">
+          →
+        </div>
+
+        <section class="position-card current">
+          <p>{{ currentPosition.title }}</p>
+          <h3>{{ currentPosition.status }}</h3>
+
+          <div class="position-grid">
+            <div>
+              <span>Block</span>
+              <strong>{{ currentPosition.block }}</strong>
+            </div>
+
+            <div>
+              <span>Bay</span>
+              <strong>{{ currentPosition.bay }}</strong>
+            </div>
+
+            <div>
+              <span>Row</span>
+              <strong>{{ currentPosition.row }}</strong>
+            </div>
+
+            <div>
+              <span>Tier</span>
+              <strong>{{ currentPosition.tier }}</strong>
+            </div>
+          </div>
+
+          <small>{{ currentPosition.description }}</small>
+        </section>
+      </div>
+
+      <div
+        *ngIf="!isHistoryLoading && !historyErrorMessage && latestHistoryTransaction"
+        class="history-summary"
+      >
+        <div>
+          <span>Giao dịch gần nhất</span>
+          <strong>{{ latestHistoryTransaction.transactionType }}</strong>
+        </div>
+
+        <div>
+          <span>Thời gian</span>
+          <strong>{{ formatHistoryDate(latestHistoryTransaction.transactionTime) }}</strong>
+        </div>
+
+        <div>
+          <span>Số xe</span>
+          <strong>{{ latestHistoryTransaction.vehicleNumber || '-' }}</strong>
+        </div>
+      </div>
+    </article>
+  </section>
+
+  <section *ngIf="isLoading" class="state-card">
+    Đang tải danh sách container từ backend...
+  </section>
+
+  <section *ngIf="errorMessage" class="state-card error-card">
+    {{ errorMessage }}
+  </section>
+
+  <section *ngIf="!isLoading && !errorMessage" class="content-grid">
+    <article class="table-panel">
+      <div class="panel-header">
+        <div>
+          <h2>Danh sách container</h2>
+          <p>Theo dõi thông tin container và trạng thái hiện tại trong depot.</p>
+        </div>
+
+        <span class="record-count">{{ totalCount }} bản ghi</span>
+      </div>
+
+      <div class="table-scroll">
+        <table class="data-table">
+          <thead>
+          <tr>
+            <th>Số container</th>
+            <th>Loại</th>
+            <th>Mã ISO</th>
+            <th>Kích thước</th>
+            <th>Hãng</th>
+            <th>Tình trạng</th>
+            <th>Phân loại</th>
+            <th>Trạng thái</th>
+          </tr>
+          </thead>
+
+          <tbody>
+          <tr
+            *ngFor="let container of containers"
+            [class.selected-row]="selectedContainer?.id === container.id"
+            (click)="selectContainer(container)"
+          >
+            <td><strong>{{ container.containerNumber }}</strong></td>
+            <td>{{ container.containerTypeCode || '-' }}</td>
+            <td>{{ container.isoCode || '-' }}</td>
+            <td>{{ container.containerSize }} ft</td>
+            <td>{{ container.lineOperatorCode || container.lineOperatorName || '-' }}</td>
+            <td>
+              <span class="condition" [ngClass]="getConditionClass(container.containerCondition)">
+                {{ getConditionDisplayName(container.containerCondition) }}
+              </span>
+            </td>
+            <td>{{ container.containerClassification || '-' }}</td>
+            <td>
+              <span class="status" [ngClass]="getStatusClass(container.currentStatus)">
+                {{ container.currentStatus || '-' }}
+              </span>
+            </td>
+          </tr>
+
+          <tr *ngIf="containers.length === 0">
+            <td colspan="8" class="empty-cell">
+              Không tìm thấy container phù hợp với bộ lọc hiện tại.
+            </td>
+          </tr>
+          </tbody>
+        </table>
+      </div>
+    </article>
+
+    <aside class="detail-panel" *ngIf="selectedContainer as container; else emptyDetail">
+      <div class="detail-header">
+        <div>
+          <p>Container đang chọn</p>
+          <h2>{{ container.containerNumber }}</h2>
+        </div>
+
+        <span class="status" [ngClass]="getStatusClass(container.currentStatus)">
+          {{ container.currentStatus || '-' }}
+        </span>
+      </div>
+
+      <div class="detail-section">
+        <h3>Thông tin cơ bản</h3>
+
+        <div class="detail-row">
+          <span>Loại container</span>
+          <strong>
+            {{ container.containerTypeCode || '-' }}
+            -
+            {{ container.containerTypeName || '-' }}
+          </strong>
+        </div>
+
+        <div class="detail-row">
+          <span>Mã ISO</span>
+          <strong>{{ container.isoCode || '-' }}</strong>
+        </div>
+
+        <div class="detail-row">
+          <span>Hãng khai thác</span>
+          <strong>
+            {{ container.lineOperatorCode || '-' }}
+            -
+            {{ container.lineOperatorName || '-' }}
+          </strong>
+        </div>
+
+        <div class="detail-row">
+          <span>Chủ sở hữu</span>
+          <strong>{{ container.containerOwner || '-' }}</strong>
+        </div>
+      </div>
+
+      <div class="detail-section">
+        <h3>Thông tin kỹ thuật</h3>
+
+        <div class="detail-row">
+          <span>Trọng lượng tối đa</span>
+          <strong>{{ formatWeight(container.maximumWeight) }} kg</strong>
+        </div>
+
+        <div class="detail-row">
+          <span>Trọng lượng vỏ</span>
+          <strong>{{ formatWeight(container.tareWeight) }} kg</strong>
+        </div>
+
+        <div class="detail-row">
+          <span>Ngày sản xuất</span>
+          <strong>{{ formatDate(container.dateOfManufacture) }}</strong>
+        </div>
+
+        <div class="detail-row">
+          <span>Phân loại</span>
+          <strong>{{ container.containerClassification || '-' }}</strong>
+        </div>
+
+        <div class="detail-row">
+          <span>Tình trạng</span>
+          <strong>{{ getConditionDisplayName(container.containerCondition) }}</strong>
+        </div>
+      </div>
+
+      <div class="detail-actions">
+        <button
+          type="button"
+          class="secondary-button"
+          (click)="openContainerHistoryModal(container)"
+        >
+          Xem lịch sử
+        </button>
+
+        <button type="button" class="primary-button" (click)="openEditContainerModal(container)">
+          Chỉnh sửa
+        </button>
+      </div>
+    </aside>
+
+    <ng-template #emptyDetail>
+      <aside class="detail-panel empty-detail">
+        Không có container nào được chọn.
+      </aside>
+    </ng-template>
+  </section>
+</div>

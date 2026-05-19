@@ -1,0 +1,227 @@
+<div class="reports-page">
+  <section class="page-header">
+    <div>
+      <p class="page-kicker">REPORTS</p>
+      <h1>Báo cáo depot</h1>
+      <p class="page-description">
+        Theo dõi sản lượng nhập / xuất container trong kỳ báo cáo và tồn bãi tại ngày kết thúc.
+      </p>
+    </div>
+
+    <div class="report-date-card">
+      <label>
+        <span>Từ ngày</span>
+        <input
+          type="date"
+          name="fromDate"
+          [(ngModel)]="fromDate"
+          (change)="onDateRangeChanged()"
+        />
+      </label>
+
+      <label>
+        <span>Đến ngày</span>
+        <input
+          type="date"
+          name="toDate"
+          [(ngModel)]="toDate"
+          (change)="onDateRangeChanged()"
+        />
+      </label>
+
+      <button
+        type="button"
+        class="primary-button"
+        (click)="loadReports()"
+        [disabled]="isLoadingThroughput || isLoadingInventory"
+      >
+        {{ isLoadingThroughput || isLoadingInventory ? 'Đang tải...' : 'Tải báo cáo' }}
+      </button>
+    </div>
+  </section>
+
+  <section class="summary-grid">
+    <article class="summary-card">
+      <p>Tổng nhập bãi</p>
+      <strong>{{ getTotalImportCount() }}</strong>
+      <span>container trong kỳ {{ getReportRangeDisplay() }}</span>
+    </article>
+
+    <article class="summary-card">
+      <p>Tổng xuất bãi</p>
+      <strong>{{ getTotalExportCount() }}</strong>
+      <span>container trong kỳ {{ getReportRangeDisplay() }}</span>
+    </article>
+
+    <article class="summary-card">
+      <p>Tổng giao dịch</p>
+      <strong>{{ getTotalThroughputCount() }}</strong>
+      <span>bao gồm nhập và xuất bãi</span>
+    </article>
+
+    <article class="summary-card highlight">
+      <p>Tổng tồn bãi</p>
+      <strong>{{ getTotalInYardCount() }}</strong>
+      <span>tính tại ngày {{ getInventoryDateDisplay() }}</span>
+    </article>
+  </section>
+
+  <section class="chart-grid">
+    <article class="chart-panel">
+      <div class="panel-header">
+        <div>
+          <p>THROUGHPUT CHART</p>
+          <h2>Biểu đồ sản lượng nhập / xuất theo hãng khai thác</h2>
+        </div>
+
+        <span class="record-count">{{ throughputReports.length }} hãng</span>
+      </div>
+
+      <div *ngIf="isLoadingThroughput" class="state-card info">
+        Đang tải báo cáo sản lượng...
+      </div>
+
+      <div *ngIf="throughputErrorMessage" class="state-card error">
+        {{ throughputErrorMessage }}
+      </div>
+
+      <div
+        *ngIf="!isLoadingThroughput && !throughputErrorMessage && throughputReports.length > 0"
+        class="bar-chart"
+      >
+        <div *ngFor="let item of throughputReports" class="chart-row">
+          <div class="chart-label">
+            <strong>
+              {{ getShortLineOperatorName(item.lineOperatorCode, item.lineOperatorName, item.lineOperatorId) }}
+            </strong>
+            <span>{{ item.totalCount }} giao dịch</span>
+          </div>
+
+          <div class="chart-bars">
+            <div class="bar-line">
+              <span class="bar-name import">Nhập</span>
+              <div class="bar-track">
+                <div
+                  class="bar-fill import"
+                  [style.width]="getBarWidth(item.importCount, getMaxThroughputValue())"
+                ></div>
+              </div>
+              <strong>{{ item.importCount }}</strong>
+            </div>
+
+            <div class="bar-line">
+              <span class="bar-name export">Xuất</span>
+              <div class="bar-track">
+                <div
+                  class="bar-fill export"
+                  [style.width]="getBarWidth(item.exportCount, getMaxThroughputValue())"
+                ></div>
+              </div>
+              <strong>{{ item.exportCount }}</strong>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div
+        *ngIf="!isLoadingThroughput && !throughputErrorMessage && throughputReports.length === 0"
+        class="empty-chart"
+      >
+        Không có dữ liệu nhập / xuất trong kỳ báo cáo.
+      </div>
+    </article>
+
+    <article class="chart-panel">
+      <div class="panel-header">
+        <div>
+          <p>YARD INVENTORY CHART</p>
+          <h2>Biểu đồ tồn bãi theo thời gian lưu container</h2>
+        </div>
+
+        <span class="record-count">{{ yardInventoryReports.length }} hãng</span>
+      </div>
+
+      <div *ngIf="isLoadingInventory" class="state-card info">
+        Đang tải báo cáo tồn bãi...
+      </div>
+
+      <div *ngIf="inventoryErrorMessage" class="state-card error">
+        {{ inventoryErrorMessage }}
+      </div>
+
+      <div
+        *ngIf="!isLoadingInventory && !inventoryErrorMessage && yardInventoryReports.length > 0"
+        class="stacked-chart"
+      >
+        <div *ngFor="let item of yardInventoryReports" class="stacked-row">
+          <div class="chart-label">
+            <strong>
+              {{ getShortLineOperatorName(item.lineOperatorCode, item.lineOperatorName, item.lineOperatorId) }}
+            </strong>
+            <span>{{ item.totalInYardCount }} container tồn</span>
+          </div>
+
+          <div class="stacked-bar-wrap">
+            <div class="stacked-bar">
+              <div
+                class="stacked-segment fresh"
+                [style.width]="getInventorySegmentWidth(item.from0To10DaysCount, item.totalInYardCount)"
+              >
+                <span *ngIf="item.from0To10DaysCount > 0">
+                  {{ item.from0To10DaysCount }}
+                </span>
+              </div>
+
+              <div
+                class="stacked-segment long-stay"
+                [style.width]="getInventorySegmentWidth(item.from10DaysOrMoreCount, item.totalInYardCount)"
+              >
+                <span *ngIf="item.from10DaysOrMoreCount > 0">
+                  {{ item.from10DaysOrMoreCount }}
+                </span>
+              </div>
+            </div>
+
+            <strong>{{ item.totalInYardCount }}</strong>
+          </div>
+        </div>
+
+        <div class="chart-legend">
+          <span><i class="legend-dot fresh"></i>0 - 10 ngày</span>
+          <span><i class="legend-dot long-stay"></i>≥ 10 ngày</span>
+        </div>
+      </div>
+
+      <div
+        *ngIf="!isLoadingInventory && !inventoryErrorMessage && yardInventoryReports.length === 0"
+        class="empty-chart"
+      >
+        Không có container tồn bãi tại ngày kết thúc báo cáo.
+      </div>
+    </article>
+  </section>
+
+  <section class="inventory-summary-panel">
+    <div>
+      <p>PHÂN TÍCH TỒN BÃI</p>
+      <h2>Tổng hợp thời gian lưu container</h2>
+    </div>
+
+    <div class="inventory-summary-grid">
+      <article>
+        <span>0 - 10 ngày</span>
+        <strong>{{ getTotalFrom0To10DaysCount() }}</strong>
+      </article>
+
+      <article>
+        <span>≥ 10 ngày</span>
+        <strong>{{ getTotalFrom10DaysOrMoreCount() }}</strong>
+      </article>
+
+      <article>
+        <span>Tổng tồn bãi</span>
+        <strong>{{ getTotalInYardCount() }}</strong>
+      </article>
+    </div>
+  </section>
+</div>

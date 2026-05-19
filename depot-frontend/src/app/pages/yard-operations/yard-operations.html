@@ -1,0 +1,408 @@
+<div class="yard-operations-page">
+  <section class="page-header">
+    <div>
+      <p class="page-kicker">YARD OPERATIONS</p>
+      <h1>Vận hành nhập / xuất container</h1>
+      <p class="page-description">
+        Thực hiện nghiệp vụ nhập bãi, xuất bãi và theo dõi lịch sử giao dịch trong depot.
+      </p>
+    </div>
+  </section>
+
+  <section class="operation-tabs">
+    <button
+      type="button"
+      [class.active]="activeTab === 'import'"
+      (click)="setActiveTab('import')"
+    >
+      <span>01</span>
+      Nhập container
+    </button>
+
+    <button
+      type="button"
+      [class.active]="activeTab === 'export'"
+      (click)="setActiveTab('export')"
+    >
+      <span>02</span>
+      Xuất container
+    </button>
+
+    <button
+      type="button"
+      [class.active]="activeTab === 'history'"
+      (click)="setActiveTab('history')"
+    >
+      <span>03</span>
+      Lịch sử Container
+    </button>
+  </section>
+
+  <section class="operation-content">
+    <article *ngIf="activeTab === 'import'" class="operation-card">
+      <div class="card-header">
+        <div>
+          <p>IMPORT CONTAINER</p>
+          <h2>Nhập container vào bãi</h2>
+        </div>
+
+        <span class="badge import">In</span>
+      </div>
+
+      <form class="operation-form" (ngSubmit)="submitImport()">
+        <div *ngIf="isLoadingContainers" class="alert-message info">
+          Đang tải danh sách container...
+        </div>
+
+        <div *ngIf="importSuccessMessage" class="alert-message success">
+          {{ importSuccessMessage }}
+        </div>
+
+        <div *ngIf="importErrorMessage" class="alert-message error">
+          {{ importErrorMessage }}
+        </div>
+
+        <div class="form-grid">
+          <label>
+            <span>Container cần nhập bãi</span>
+            <select
+              name="importContainerId"
+              [(ngModel)]="importForm.containerId"
+              [disabled]="isImportSubmitting || isLoadingContainers"
+            >
+              <option [ngValue]="null">Chọn container</option>
+              <option *ngFor="let container of containers" [ngValue]="container.id">
+                {{ getYardContainerDisplayText(container) }}
+              </option>
+            </select>
+          </label>
+
+          <label class="block-field">
+            <span>Block</span>
+
+            <small *ngIf="isLoadingBlocks" class="block-note">
+              Đang tải block...
+            </small>
+
+            <ng-container *ngIf="!isLoadingBlocks && importForm.toBlockId">
+              <small
+                *ngIf="getSelectedImportBlock() as block; else importBlockNotFound"
+                class="block-note"
+                [ngClass]="getBlockTypeClass(block.blockType)"
+              >
+                {{ block.blockCode || ('Block ' + block.id) }} - {{ block.blockType || 'Không xác định' }}
+              </small>
+
+              <ng-template #importBlockNotFound>
+                <small class="block-note error">
+                  Không tìm thấy block
+                </small>
+              </ng-template>
+            </ng-container>
+
+            <input
+              type="number"
+              name="importToBlockId"
+              min="1"
+              placeholder="Ví dụ: 1"
+              [(ngModel)]="importForm.toBlockId"
+              (ngModelChange)="onImportBlockChanged()"
+              [disabled]="isImportSubmitting"
+            />
+          </label>
+
+          <label>
+            <span>Bay</span>
+            <input
+              type="number"
+              name="importToBay"
+              min="1"
+              placeholder="1"
+              [(ngModel)]="importForm.toBay"
+              [disabled]="isImportSubmitting"
+            />
+          </label>
+
+          <label>
+            <span>Row</span>
+            <input
+              type="number"
+              name="importToRow"
+              min="1"
+              placeholder="1"
+              [(ngModel)]="importForm.toRow"
+              [disabled]="isImportSubmitting"
+            />
+          </label>
+
+          <label>
+            <span>Tier</span>
+            <input
+              type="number"
+              name="importToTier"
+              min="1"
+              placeholder="1"
+              [(ngModel)]="importForm.toTier"
+              [disabled]="isImportSubmitting"
+            />
+          </label>
+
+          <label>
+            <span>Số xe vận chuyển</span>
+            <input
+              type="text"
+              name="importVehicleNumber"
+              placeholder="Ví dụ: 51C-12345"
+              [(ngModel)]="importForm.vehicleNumber"
+              [disabled]="isImportSubmitting"
+            />
+          </label>
+
+          <label>
+            <span>Thời gian nhập</span>
+            <input
+              type="datetime-local"
+              name="importTransactionTime"
+              [(ngModel)]="importForm.transactionTime"
+              [disabled]="isImportSubmitting"
+            />
+          </label>
+
+          <label class="full-width">
+            <span>Ghi chú</span>
+            <textarea
+              name="importNote"
+              rows="4"
+              placeholder="Nhập ghi chú nếu có..."
+              [(ngModel)]="importForm.note"
+              [disabled]="isImportSubmitting"
+            ></textarea>
+          </label>
+        </div>
+
+        <div class="form-actions">
+          <button
+            type="submit"
+            class="primary-button"
+            [disabled]="isImportSubmitting || isLoadingContainers"
+          >
+            {{ isImportSubmitting ? 'Đang nhập bãi...' : 'Xác nhận nhập bãi' }}
+          </button>
+        </div>
+      </form>
+    </article>
+
+    <article *ngIf="activeTab === 'export'" class="operation-card">
+      <div class="card-header">
+        <div>
+          <p>EXPORT CONTAINER</p>
+          <h2>Xuất container khỏi bãi</h2>
+        </div>
+
+        <span class="badge export">Out</span>
+      </div>
+
+      <form class="operation-form" (ngSubmit)="submitExport()">
+        <div *ngIf="isLoadingContainers" class="alert-message info">
+          Đang tải danh sách container...
+        </div>
+
+        <div *ngIf="isLoadingDeliveryOrders" class="alert-message info">
+          Đang tải danh sách Delivery Order...
+        </div>
+
+        <div *ngIf="exportSuccessMessage" class="alert-message success">
+          {{ exportSuccessMessage }}
+        </div>
+
+        <div *ngIf="exportErrorMessage" class="alert-message error">
+          {{ exportErrorMessage }}
+        </div>
+
+        <div class="form-grid">
+          <label>
+            <span>Container cần xuất bãi</span>
+            <select
+              name="exportContainerId"
+              [(ngModel)]="exportForm.containerId"
+              (ngModelChange)="onExportContainerChanged()"
+              [disabled]="isExportSubmitting || isLoadingContainers"
+            >
+              <option [ngValue]="null">Chọn container</option>
+              <option *ngFor="let container of containers" [ngValue]="container.id">
+                {{ container.containerNumber }}
+                -
+                {{ container.containerTypeCode || 'N/A' }}
+                -
+                {{ container.lineOperatorCode || container.lineOperatorName || 'N/A' }}
+                -
+                {{ container.currentStatus || 'N/A' }}
+              </option>
+            </select>
+          </label>
+
+          <label>
+            <span>Delivery Order</span>
+            <select
+              name="exportDeliveryOrderId"
+              [(ngModel)]="exportForm.deliveryOrderId"
+              [disabled]="
+                isExportSubmitting ||
+                isLoadingDeliveryOrders ||
+                !exportForm.containerId ||
+                getFilteredDeliveryOrders().length === 0
+              "
+            >
+              <option [ngValue]="null">
+                {{
+                  exportForm.containerId
+                    ? 'Chọn Delivery Order'
+                    : 'Chọn container trước'
+                }}
+              </option>
+
+              <option *ngFor="let order of getFilteredDeliveryOrders()" [ngValue]="order.id">
+                {{ getDeliveryOrderDisplayText(order) }}
+              </option>
+            </select>
+          </label>
+
+          <label>
+            <span>Số xe vận chuyển</span>
+            <input
+              type="text"
+              name="exportVehicleNumber"
+              placeholder="Ví dụ: 51D-67890"
+              [(ngModel)]="exportForm.vehicleNumber"
+              [disabled]="isExportSubmitting"
+            />
+          </label>
+
+          <label>
+            <span>Thời gian xuất</span>
+            <input
+              type="datetime-local"
+              name="exportTransactionTime"
+              [(ngModel)]="exportForm.transactionTime"
+              [disabled]="isExportSubmitting"
+            />
+          </label>
+
+          <label class="full-width">
+            <span>Ghi chú</span>
+            <textarea
+              name="exportNote"
+              rows="4"
+              placeholder="Nhập ghi chú nếu có..."
+              [(ngModel)]="exportForm.note"
+              [disabled]="isExportSubmitting"
+            ></textarea>
+          </label>
+        </div>
+
+        <div
+          *ngIf="
+            exportForm.containerId &&
+            !isLoadingDeliveryOrders &&
+            getFilteredDeliveryOrders().length === 0
+          "
+          class="alert-message error"
+        >
+          Không có Delivery Order phù hợp với container đã chọn.
+        </div>
+
+        <div class="form-actions">
+          <button
+            type="submit"
+            class="primary-button"
+            [disabled]="
+              isExportSubmitting ||
+              isLoadingContainers ||
+              isLoadingDeliveryOrders ||
+              getFilteredDeliveryOrders().length === 0
+            "
+          >
+            {{ isExportSubmitting ? 'Đang xuất bãi...' : 'Xác nhận xuất bãi' }}
+          </button>
+        </div>
+      </form>
+    </article>
+
+    <article *ngIf="activeTab === 'history'" class="operation-card">
+      <div class="card-header">
+        <div>
+          <p>TRANSACTION HISTORY</p>
+          <h2>Lịch sử giao dịch container</h2>
+        </div>
+
+        <span class="record-count">{{ historyItems.length }} giao dịch</span>
+      </div>
+
+      <div *ngIf="isLoadingHistory" class="alert-message info">
+        Đang tải lịch sử container...
+      </div>
+
+      <div *ngIf="historyErrorMessage" class="alert-message error">
+        {{ historyErrorMessage }}
+      </div>
+
+      <div class="history-search-card">
+        <label>
+          <span>Tìm kiếm lịch sử</span>
+          <input
+            type="text"
+            placeholder="Nhập số container, loại giao dịch, vị trí, số xe, ghi chú..."
+            [(ngModel)]="historySearchKeyword"
+            (input)="applyHistorySearch()"
+          />
+        </label>
+
+        <button type="button" class="secondary-button" (click)="clearHistorySearch()">
+          Đặt lại
+        </button>
+      </div>
+
+      <div class="history-table-wrap">
+        <table class="history-table">
+          <thead>
+          <tr>
+            <th>Mã giao dịch</th>
+            <th>Số container</th>
+            <th>Loại</th>
+            <th>Vị trí đi</th>
+            <th>Vị trí đến</th>
+            <th>Số xe</th>
+            <th>Thời gian</th>
+            <th>Ghi chú</th>
+          </tr>
+          </thead>
+
+          <tbody>
+          <tr *ngFor="let item of historyItems">
+            <td>
+              <strong>{{ item.id }}</strong>
+            </td>
+            <td>{{ item.containerNumber }}</td>
+            <td>
+              <span class="transaction-badge" [ngClass]="getTransactionClass(item.transactionType)">
+                {{ item.transactionType }}
+              </span>
+            </td>
+            <td>{{ item.fromPosition }}</td>
+            <td>{{ item.toPosition }}</td>
+            <td>{{ item.vehicleNumber || '-' }}</td>
+            <td>{{ item.transactionTime }}</td>
+            <td>{{ item.note || '-' }}</td>
+          </tr>
+
+          <tr *ngIf="!isLoadingHistory && historyItems.length === 0">
+            <td colspan="8" class="empty-history-cell">
+              Không tìm thấy lịch sử container phù hợp.
+            </td>
+          </tr>
+          </tbody>
+        </table>
+      </div>
+    </article>
+  </section>
+</div>
