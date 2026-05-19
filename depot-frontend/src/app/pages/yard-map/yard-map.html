@@ -1,1 +1,335 @@
-<p>yard-map works!</p>
+<div class="yard-map-page">
+  <section class="page-header">
+    <div>
+      <p class="page-kicker">YARD MAP</p>
+      <h1>Sơ đồ bãi container</h1>
+      <p class="page-description">
+        Theo dõi trực quan vị trí container theo Block, Bay, Row và Tier trong depot.
+      </p>
+    </div>
+
+    <button type="button" class="refresh-button" (click)="loadYardMap()" [disabled]="isLoading">
+      {{ isLoading ? 'Đang tải...' : 'Tải lại Yard Map' }}
+    </button>
+  </section>
+
+  <section class="status-row">
+    <div *ngIf="errorMessage" class="alert-message error">
+      {{ errorMessage }}
+    </div>
+
+    <div *ngIf="!errorMessage && isLoading" class="alert-message info">
+      Đang tải dữ liệu sơ đồ bãi...
+    </div>
+  </section>
+
+  <section class="summary-grid">
+    <article class="summary-card">
+      <span>Tổng block</span>
+      <strong>{{ blocks.length }}</strong>
+      <small>{{ getPhysicalBlocks().length }} block thật, {{ getVirtualBlocks().length }} block ảo</small>
+    </article>
+
+    <article class="summary-card">
+      <span>Container trong bãi</span>
+      <strong>{{ getTotalOccupiedSlots() }}</strong>
+      <small>Dựa trên ContainerPosition hiện tại</small>
+    </article>
+
+    <article class="summary-card">
+      <span>Sức chứa vật lý</span>
+      <strong>{{ getTotalCapacity() }}</strong>
+      <small>Tính theo Bay × Row × Tier của block thật</small>
+    </article>
+
+    <article class="summary-card">
+      <span>Tỷ lệ sử dụng</span>
+      <strong>{{ getTotalUsagePercent() }}%</strong>
+      <small *ngIf="lastUpdatedAt">Cập nhật lúc {{ lastUpdatedAt | date: 'HH:mm' }}</small>
+    </article>
+  </section>
+
+  <section class="yard-layout">
+    <aside class="block-panel">
+      <div class="panel-header">
+        <div>
+          <p>BLOCK LIST</p>
+          <h2>Danh sách block</h2>
+        </div>
+      </div>
+
+      <div class="block-panel-summary">
+        <small>{{ getTotalOccupiedSlots() }} / {{ getTotalCapacity() }} vị trí đang sử dụng</small>
+
+        <div class="block-panel-line">
+          <div [style.width.%]="getTotalUsagePercent()"></div>
+        </div>
+      </div>
+
+      <div class="block-list">
+        <button
+          type="button"
+          *ngFor="let block of blocks; trackBy: trackByBlockId"
+          class="block-card"
+          [class.active]="selectedBlockId === block.id"
+          [ngClass]="getBlockTypeClass(block.blockType)"
+          (click)="selectBlock(block)"
+        >
+          <div class="block-title-row">
+            <strong>{{ getBlockDisplayName(block) }}</strong>
+            <span>{{ getBlockTypeDisplayName(block.blockType) }}</span>
+          </div>
+
+          <p>{{ block.blockName || 'Chưa có tên block' }}</p>
+
+          <div class="block-meta">
+            <span *ngIf="!isVirtualBlock(block)">
+              {{ block.maxBay || 0 }} Bay · {{ block.maxRow || 0 }} Row · {{ block.maxTier || 0 }} Tier
+            </span>
+            <span *ngIf="isVirtualBlock(block)">Không có vị trí vật lý</span>
+          </div>
+
+          <small>
+            {{ getBlockOccupiedSlots(block) }} / {{ getBlockCapacity(block) || 0 }} vị trí ·
+            {{ getBlockTypeHint(block.blockType) }}
+          </small>
+        </button>
+      </div>
+    </aside>
+
+    <main class="map-panel">
+      <ng-container *ngIf="getSelectedBlock() as selectedBlock; else emptyBlockState">
+        <section class="map-card">
+          <div class="map-header">
+            <div>
+              <p>SELECTED BLOCK</p>
+              <h2>
+                {{ getBlockDisplayName(selectedBlock) }}
+                <span [ngClass]="getBlockTypeClass(selectedBlock.blockType)">
+                  {{ getBlockTypeDisplayName(selectedBlock.blockType) }}
+                </span>
+              </h2>
+              <small>{{ getBlockTypeHint(selectedBlock.blockType) }}</small>
+            </div>
+
+            <div class="map-stats">
+              <strong>{{ getBlockUsagePercent(selectedBlock) }}%</strong>
+              <span>{{ getBlockOccupiedSlots(selectedBlock) }} / {{ getBlockCapacity(selectedBlock) || 0 }} vị trí</span>
+            </div>
+          </div>
+
+          <div *ngIf="isVirtualBlock(selectedBlock)" class="virtual-state">
+            <h3>Đây là block ảo</h3>
+            <p>
+              Block ảo không có Bay / Row / Tier vật lý, nên Yard Map không vẽ sơ đồ vị trí cho block này.
+            </p>
+          </div>
+
+          <div *ngIf="!isVirtualBlock(selectedBlock)" class="yard-map-body">
+            <section class="tier-toolbar">
+              <div>
+                <span>Tầng đang xem</span>
+                <strong>Tier {{ selectedTier }}</strong>
+                <small>
+                  {{ getBlockOccupiedSlotsByTier(selectedBlock, selectedTier) }} /
+                  {{ getCurrentTierCapacity(selectedBlock) }} vị trí ở tầng này
+                </small>
+              </div>
+
+              <div class="tier-buttons">
+                <button
+                  type="button"
+                  *ngFor="let tier of getTierNumbers(selectedBlock); trackBy: trackByNumber"
+                  [class.active]="selectedTier === tier"
+                  (click)="selectTier(tier)"
+                >
+                  Tier {{ tier }}
+                </button>
+              </div>
+            </section>
+
+            <div class="tier-summary">
+              <div>
+                <span>Sức chứa tầng {{ selectedTier }}</span>
+                <strong>{{ getCurrentTierCapacity(selectedBlock) }}</strong>
+              </div>
+
+              <div>
+                <span>Đang có container</span>
+                <strong>{{ getBlockOccupiedSlotsByTier(selectedBlock, selectedTier) }}</strong>
+              </div>
+
+              <div>
+                <span>Tỷ lệ tầng</span>
+                <strong>{{ getCurrentTierUsagePercent(selectedBlock) }}%</strong>
+              </div>
+            </div>
+
+            <section class="map-move-bar">
+              <div class="move-step">
+                <span>Nguồn</span>
+                <strong>{{ getMoveSourceText() }}</strong>
+              </div>
+
+              <div class="move-arrow">→</div>
+
+              <div class="move-step">
+                <span>Đích</span>
+                <strong>{{ getMoveTargetText() }}</strong>
+              </div>
+
+              <div class="move-inline-actions">
+                <button
+                  type="button"
+                  class="ghost-button"
+                  (click)="clearMoveSelection()"
+                  [disabled]="isMoveSubmitting"
+                >
+                  Hủy chọn
+                </button>
+
+                <button
+                  type="button"
+                  class="primary-button"
+                  (click)="submitMove()"
+                  [disabled]="isMoveSubmitting || !moveSourceSlot || !moveTargetSlot"
+                >
+                  {{ isMoveSubmitting ? 'Đang di chuyển...' : 'Xác nhận di chuyển' }}
+                </button>
+              </div>
+            </section>
+
+            <div *ngIf="moveSuccessMessage" class="alert-message success">
+              {{ moveSuccessMessage }}
+            </div>
+
+            <div *ngIf="moveErrorMessage" class="alert-message error">
+              {{ moveErrorMessage }}
+            </div>
+
+            <div class="yard-plan-scroll">
+              <div
+                class="yard-plan-grid"
+                [style.grid-template-columns]="getPlanGridTemplateColumns(selectedBlock)"
+              >
+                <div class="plan-corner">Row / Bay</div>
+
+                <div
+                  *ngFor="let bay of getBayNumbers(selectedBlock); trackBy: trackByNumber"
+                  class="plan-bay-header"
+                >
+                  Bay {{ bay }}
+                </div>
+
+                <ng-container *ngFor="let row of getRowNumbers(selectedBlock); trackBy: trackByNumber">
+                  <div class="plan-row-header">
+                    Row {{ row }}
+                  </div>
+
+                  <button
+                    type="button"
+                    *ngFor="let bay of getBayNumbers(selectedBlock); trackBy: trackByNumber"
+                    class="plan-cell"
+                    [class.selected]="
+                      selectedSlot?.block?.id === selectedBlock.id &&
+                      selectedSlot?.bay === bay &&
+                      selectedSlot?.row === row &&
+                      selectedSlot?.tier === selectedTier
+                    "
+                    [class.move-source]="isMoveSourceCell(selectedBlock.id, bay, row, selectedTier)"
+                    [class.move-target]="isMoveTargetCell(selectedBlock.id, bay, row, selectedTier)"
+                    [ngClass]="getSlotClass(getPositionAt(selectedBlock.id, bay, row, selectedTier), selectedBlock)"
+                    (click)="selectSlot(selectedBlock, bay, row, selectedTier)"
+                  >
+                    <span>
+                      <ng-container *ngIf="isMoveSourceCell(selectedBlock.id, bay, row, selectedTier)">
+                        Nguồn
+                      </ng-container>
+
+                      <ng-container *ngIf="isMoveTargetCell(selectedBlock.id, bay, row, selectedTier)">
+                        Đích
+                      </ng-container>
+
+                      <ng-container
+                        *ngIf="
+                          !isMoveSourceCell(selectedBlock.id, bay, row, selectedTier) &&
+                          !isMoveTargetCell(selectedBlock.id, bay, row, selectedTier)
+                        "
+                      >
+                        B{{ bay }} / R{{ row }}
+                      </ng-container>
+                    </span>
+
+                    <strong>{{ getSlotLabel(getPositionAt(selectedBlock.id, bay, row, selectedTier)) }}</strong>
+                  </button>
+                </ng-container>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="slot-detail-card" *ngIf="selectedSlot as slot">
+          <div class="slot-detail-header">
+            <div>
+              <p>VỊ TRÍ ĐANG CHỌN</p>
+              <h3>
+                {{ getBlockDisplayName(slot.block) }} · Bay {{ slot.bay }} · Row {{ slot.row }} · Tier {{ slot.tier }}
+              </h3>
+            </div>
+
+            <span [class.empty]="!slot.position">
+              {{ slot.position ? 'Đang có container' : 'Vị trí trống' }}
+            </span>
+          </div>
+
+          <ng-container *ngIf="slot.container as container; else emptySlotDetail">
+            <div class="container-detail-grid">
+              <div>
+                <span>Số container</span>
+                <strong>{{ getContainerDisplayName(container) }}</strong>
+              </div>
+
+              <div>
+                <span>Loại</span>
+                <strong>{{ getContainerTypeDisplay(container) }}</strong>
+              </div>
+
+              <div>
+                <span>Hãng khai thác</span>
+                <strong>{{ getContainerLineDisplay(container) }}</strong>
+              </div>
+
+              <div>
+                <span>Phân loại</span>
+                <strong>{{ container.containerClassification || 'N/A' }}</strong>
+              </div>
+
+              <div>
+                <span>Tình trạng</span>
+                <strong>{{ getContainerConditionDisplay(container.containerCondition) }}</strong>
+              </div>
+
+              <div>
+                <span>Trạng thái</span>
+                <strong>{{ container.currentStatus || 'N/A' }}</strong>
+              </div>
+            </div>
+          </ng-container>
+
+          <ng-template #emptySlotDetail>
+            <p class="empty-slot-note">
+              Đây là vị trí trống. Nếu đã chọn nguồn, ô này sẽ được dùng làm đích khi bạn bấm xác nhận di chuyển.
+            </p>
+          </ng-template>
+        </section>
+      </ng-container>
+
+      <ng-template #emptyBlockState>
+        <section class="empty-state">
+          <h2>Chưa có block để hiển thị</h2>
+          <p>Hãy kiểm tra Master Data hoặc API Block trước khi dùng Yard Map.</p>
+        </section>
+      </ng-template>
+    </main>
+  </section>
+</div>
